@@ -1,13 +1,76 @@
-import { useState } from 'react';
-
-const mock = [
-  { id: '1', locationId: '1', name: 'Área 1 - Centro' },
-  { id: '2', locationId: '1', name: 'Área 2 - Centro' },
-  { id: '3', locationId: '2', name: 'Área 1 - Norte' },
-];
+import { useEffect, useState } from 'react';
+import api from '@/lib/api';
+import type { Area, Location } from '@sigeo/shared';
 
 export function Areas() {
   const [showForm, setShowForm] = useState(false);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [form, setForm] = useState<{ locationId: string; name: string }>({ locationId: '', name: '' });
+
+  const load = async () => {
+    try {
+      setError(null);
+      const [areasRes, locsRes] = await Promise.all([
+        api.get<{ data: Area[] }>('/areas'),
+        api.get<{ data: Location[] }>('/locations'),
+      ]);
+      const locs = locsRes.data.data ?? [];
+      setAreas(areasRes.data.data ?? []);
+      setLocations(locs);
+      if (locs.length > 0 && !form.locationId) {
+        setForm((f) => ({ ...f, locationId: locs[0].id }));
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erro ao carregar áreas.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const save = async () => {
+    if (!form.locationId || !form.name.trim()) {
+      setError('Selecione um local e preencha o nome da área.');
+      return;
+    }
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccess(null);
+      await api.post('/areas', {
+        locationId: form.locationId,
+        name: form.name.trim(),
+      });
+      setForm((f) => ({ ...f, name: '' }));
+      setShowForm(false);
+      setSuccess('Área cadastrada.');
+      await load();
+    } catch (e: unknown) {
+      let msg = 'Erro ao salvar.';
+      if (e && typeof e === 'object' && 'response' in e) {
+        const res = (e as { response?: { data?: { message?: string }; status?: number } }).response;
+        msg = res?.data?.message ?? (res?.status === 401 ? 'Faça login novamente.' : `Erro ${res?.status ?? 'rede'}.`);
+      } else if (e instanceof Error) {
+        msg = e.message;
+      }
+      setError(msg);
+      setSuccess(null);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-slate-600">Carregando...</div>;
+  }
 
   return (
     <div>
@@ -21,16 +84,54 @@ export function Areas() {
           {showForm ? 'Cancelar' : 'Nova'}
         </button>
       </div>
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+          {success}
+        </div>
+      )}
       {showForm && (
         <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
           <h2 className="font-medium text-slate-700 mb-3">Nova área</h2>
-          <form className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <select className="px-3 py-2 border rounded-lg">
-              <option>Selecione o local</option>
+          <form
+            action="#" 
+            method="post"
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              save();
+            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+          >
+            <select
+              value={form.locationId}
+              onChange={(e) => setForm((f) => ({ ...f, locationId: e.target.value }))}
+              className="px-3 py-2 border rounded-lg"
+              required
+            >
+              <option value="">Selecione o local</option>
+              {locations.map((loc) => (
+                <option key={loc.id} value={loc.id}>{loc.name}</option>
+              ))}
             </select>
-            <input placeholder="Nome da área" className="px-3 py-2 border rounded-lg" />
-            <button type="submit" className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600">
-              Salvar
+            <input
+              placeholder="Nome da área"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              className="px-3 py-2 border rounded-lg"
+              required
+            />
+            <button
+              type="button"
+              disabled={saving}
+              onClick={save}
+              className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50"
+            >
+              {saving ? 'Salvando...' : 'Salvar'}
             </button>
           </form>
         </div>
@@ -45,15 +146,22 @@ export function Areas() {
             </tr>
           </thead>
           <tbody>
-            {mock.map((r) => (
-              <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className="px-4 py-3">{r.name}</td>
-                <td className="px-4 py-3">{r.locationId}</td>
-                <td className="px-4 py-3">
-                  <button type="button" className="text-slate-600 hover:underline mr-2">Editar</button>
-                </td>
-              </tr>
-            ))}
+            {areas.length === 0 ? (
+              <tr><td colSpan={3} className="px-4 py-6 text-slate-500 text-center">Nenhuma área cadastrada.</td></tr>
+            ) : (
+              areas.map((r) => {
+                const loc = locations.find((l) => l.id === r.locationId);
+                return (
+                  <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="px-4 py-3">{r.name}</td>
+                    <td className="px-4 py-3">{loc?.name ?? r.locationId}</td>
+                    <td className="px-4 py-3">
+                      <button type="button" className="text-slate-600 hover:underline mr-2">Editar</button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
