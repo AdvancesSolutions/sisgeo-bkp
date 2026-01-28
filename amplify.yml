@@ -3,8 +3,12 @@ frontend:
   phases:
     preBuild:
       commands:
+        - export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        - nvm install 18
         - nvm use 18
-        - corepack enable && corepack prepare pnpm@9.14.2 --activate
+        - node -v
+        - corepack enable
+        - corepack prepare pnpm@9.14.2 --activate
         - pnpm install --frozen-lockfile
         - pnpm --filter @sigeo/shared build
         - pnpm --filter @sigeo/web build
