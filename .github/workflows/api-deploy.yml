@@ -1,4 +1,4 @@
-name: API Build & Deploy (App Runner)
+name: API Build & Deploy (ECS sa-east-1)
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: us-east-1
+  AWS_REGION: sa-east-1
 
 jobs:
   build-and-deploy:
@@ -37,10 +37,6 @@ jobs:
         run: |
           docker push ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
 
-      - name: Deploy to App Runner
+      - name: Deploy to ECS (force new deployment)
         run: |
-          aws apprunner start-deployment --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }}
-
-      - name: Wait for deployment
-        run: |
-          aws apprunner wait deployment-successful --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }}
+          aws ecs update-service --cluster sigeo-cluster --service sigeo-api --force-new-deployment --region ${{ env.AWS_REGION }}

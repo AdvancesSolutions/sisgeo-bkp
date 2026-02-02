@@ -23,6 +23,8 @@ App React Native (Expo) do monorepo SIGEO. Consome a API já publicada na AWS e 
 
 ## Como rodar localmente
 
+Os scripts `start` e `dev` usam `expo start --offline` para **não exibir o prompt de login do Expo** (modo anônimo). Para usar tunnel/LAN com login, rode `pnpm start:lan` ou `npx expo start`.
+
 Na raiz do monorepo:
 
 ```bash

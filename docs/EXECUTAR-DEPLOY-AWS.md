@@ -13,7 +13,7 @@ aws configure
 ```
 
 - **Access Key ID** e **Secret Access Key**: IAM → Users → seu user → Security credentials → Create access key.
-- **Default region**: `us-east-1`.
+- **Default region**: `sa-east-1` (São Paulo).
 - **Default output**: `json` (ou deixar em branco).
 
 ---
@@ -25,7 +25,7 @@ cd d:\SERVIDOR\SISGEO
 .\scripts\deploy-aws.ps1
 ```
 
-Isso cria o repositório ECR `sigeo-api`, faz build da imagem e push. Anote a **URI da imagem** (ex.: `123456789012.dkr.ecr.us-east-1.amazonaws.com/sigeo-api:latest`).
+Isso cria o repositório ECR `sigeo-api` na região **sa-east-1**, faz build da imagem e push. Anote a **URI da imagem** (ex.: `123456789012.dkr.ecr.sa-east-1.amazonaws.com/sigeo-api:latest`).
 
 ---
 
@@ -85,7 +85,11 @@ git push -u origin main
 - **AWS Console** → **Amplify** → **New app** → **Host web app** → **GitHub** → escolher o repo e a branch `main`.
 - **Build**: usar o `amplify.yml` na raiz (monorepo).
 - **Env var**: `VITE_API_URL` = **URL do App Runner** (ex.: `https://….awsapprunner.com`).
-- **Rewrites**: SPA — `/*` → `/index.html` (200).
+- **Rewrites (obrigatório para a página abrir)**: regra SPA para servir `index.html` em todas as rotas. No Console: **Hosting** → **Rewrites and redirects** → **Manage redirects** e use o JSON de `scripts/amplify-custom-rules.json`, ou rode:
+  ```powershell
+  .\scripts\amplify-spa-redirect.ps1 -AwsRegion sa-east-1
+  ```
+- **Env var**: `VITE_API_URL` = URL do App Runner (ex.: `https://….awsapprunner.com`).
 - Anotar a **URL do app** (ex.: `https://main.xxxxx.amplifyapp.com`).
 
 Depois, voltar ao **App Runner** e ajustar `CORS_ORIGIN` para essa URL do Amplify.
@@ -100,7 +104,7 @@ No **GitHub** → repo → **Settings** → **Secrets and variables** → **Acti
 |------|--------|
 | `AWS_ACCESS_KEY_ID` | access key do IAM user |
 | `AWS_SECRET_ACCESS_KEY` | secret key |
-| `AWS_REGION` | `us-east-1` |
+| `AWS_REGION` | `sa-east-1` |
 | `ECR_REPO` | `sigeo-api` |
 | `APP_RUNNER_SERVICE_ARN` | ARN do serviço App Runner |
 

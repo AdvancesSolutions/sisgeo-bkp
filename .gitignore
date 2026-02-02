@@ -22,3 +22,4 @@ build
 .cache
 uploads
 *.sqlite
+scripts/ar-*-update.json

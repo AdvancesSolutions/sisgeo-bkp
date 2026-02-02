@@ -29,7 +29,9 @@
 
 ### 4) Integração com AWS
 - **EXPO_PUBLIC_API_URL** em `.env.development` e `.env.production`.
-- **Como preencher**: coloque a URL real do App Runner (ex: `https://xxx.us-east-1.awsapprunner.com`) em `.env.production`. Para desenvolvimento local use o IP da máquina na rede em `.env.development` (ex: `http://192.168.1.10:3000`).
+- **Produção**: use `https://dapotha14ic3h.cloudfront.net` (API em sa-east-1). Se não definir a variável, o app já usa essa URL por padrão.
+- **Desenvolvimento local**: use o IP da sua máquina na rede em `.env.development` (ex: `http://192.168.1.10:3000`).
+- **Erro "Network" / "network request failed"**: geralmente é URL errada (ex: localhost no dispositivo). Garanta que `.env.production` ou o fallback apontem para a API em produção.
 
 ### 5) Padrões de código
 - TypeScript estrito.

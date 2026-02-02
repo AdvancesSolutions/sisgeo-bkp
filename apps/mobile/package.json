@@ -4,11 +4,12 @@
   "private": true,
   "main": "index.ts",
   "scripts": {
-    "start": "expo start",
-    "dev": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
+    "start": "expo start --offline",
+    "dev": "expo start --offline",
+    "start:lan": "expo start",
+    "android": "expo start --offline --android",
+    "ios": "expo start --offline --ios",
+    "web": "expo start --offline --web",
     "lint": "expo lint"
   },
   "dependencies": {

@@ -20,7 +20,12 @@ export function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Erro ao fazer login.');
+      const res = (err as { response?: { status?: number; data?: { message?: string } } })?.response;
+      if (res?.status === 401) {
+        setError(res?.data?.message ?? 'E-mail ou senha incorretos.');
+      } else {
+        setError(res?.data?.message ?? 'Erro ao conectar. Verifique a rede e tente novamente.');
+      }
     }
   }
 

@@ -1,0 +1,34 @@
+{
+  "CallerReference": "sigeo-api-sa-east-1-2026",
+  "Comment": "SIGEO API sa-east-1 HTTPS",
+  "Enabled": true,
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "sigeo-alb",
+        "DomainName": "sigeo-alb-1251114240.sa-east-1.elb.amazonaws.com",
+        "CustomOriginConfig": {
+          "HTTPPort": 80,
+          "HTTPSPort": 443,
+          "OriginProtocolPolicy": "http-only",
+          "OriginSslProtocols": { "Quantity": 1, "Items": ["TLSv1.2"] }
+        }
+      }
+    ]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "sigeo-alb",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": { "Quantity": 7, "Items": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"], "CachedMethods": { "Quantity": 2, "Items": ["GET", "HEAD"] } },
+    "Compress": true,
+    "DefaultTTL": 0,
+    "MinTTL": 0,
+    "MaxTTL": 0,
+    "ForwardedValues": {
+      "QueryString": true,
+      "Cookies": { "Forward": "none" }
+    }
+  },
+  "PriceClass": "PriceClass_200"
+}

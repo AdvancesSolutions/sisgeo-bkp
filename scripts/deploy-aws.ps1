@@ -2,7 +2,7 @@
 # Pré-requisito: aws configure (ou AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION)
 
 param(
-    [string]$AwsRegion = "us-east-1",
+    [string]$AwsRegion = "sa-east-1",
     [string]$EcrRepo = "sigeo-api",
     [switch]$SkipBuild,
     [switch]$SkipPush
@@ -34,7 +34,7 @@ if (-not (Test-Aws)) {
     Write-Host "Execute: aws configure" -ForegroundColor Yellow
     Write-Host "  - Access Key ID" -ForegroundColor Gray
     Write-Host "  - Secret Access Key" -ForegroundColor Gray
-    Write-Host "  - Default region: us-east-1" -ForegroundColor Gray
+    Write-Host "  - Default region: sa-east-1" -ForegroundColor Gray
     Write-Host ""
     Write-Host "Ou defina: `$env:AWS_ACCESS_KEY_ID, `$env:AWS_SECRET_ACCESS_KEY, `$env:AWS_REGION" -ForegroundColor Yellow
     exit 1

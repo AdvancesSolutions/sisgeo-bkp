@@ -19,7 +19,12 @@ async function bootstrap() {
   const origin = corsOrigin
     ? corsOrigin.split(',').map((s) => s.trim())
     : ['http://localhost:5173', 'http://localhost:3000'];
-  app.enableCors({ origin, credentials: true });
+  app.enableCors({
+    origin,
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  });
 
   app.setGlobalPrefix('');
   app.useGlobalPipes(

@@ -7,7 +7,7 @@ import { pipeline } from 'stream/promises';
 import { Readable } from 'stream';
 
 const BUCKET = process.env.S3_BUCKET ?? '';
-const REGION = process.env.AWS_REGION ?? 'us-east-1';
+const REGION = process.env.AWS_REGION ?? 'sa-east-1';
 const USE_S3 = !!process.env.S3_BUCKET && !!process.env.AWS_ACCESS_KEY_ID;
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? join(process.cwd(), 'uploads');
 

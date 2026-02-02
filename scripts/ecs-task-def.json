@@ -1,0 +1,38 @@
+{
+  "family": "sigeo-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::320674390105:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "320674390105.dkr.ecr.sa-east-1.amazonaws.com/sigeo-api:latest",
+      "portMappings": [{ "containerPort": 3000, "protocol": "tcp" }],
+      "essential": true,
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "3000" },
+        { "name": "DB_HOST", "value": "sigeo-db.c7qe4cecc3pa.sa-east-1.rds.amazonaws.com" },
+        { "name": "DB_PORT", "value": "5432" },
+        { "name": "DB_USER", "value": "postgres" },
+        { "name": "DB_NAME", "value": "sigeo" },
+        { "name": "JWT_SECRET", "value": "a6fccbc898f47e21d2723efc2b776ad0785486b7a0d746cc6c086f640f2ede" },
+        { "name": "JWT_REFRESH_SECRET", "value": "657c436814463e82fba56e0767166c75420ee3c8ee070f80f514fa7fb3fa07e5" },
+        { "name": "CORS_ORIGIN", "value": "https://main.da1hucc7ed5a9.amplifyapp.com" }
+      ],
+      "secrets": [
+        { "name": "DB_PASSWORD", "valueFrom": "arn:aws:ssm:sa-east-1:320674390105:parameter/sigeo/db-password" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/sigeo-api",
+          "awslogs-region": "sa-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

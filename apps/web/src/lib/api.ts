@@ -14,8 +14,23 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Garante que a URL absoluta do refresh use o mesmo base da API (evita 404 em produção).
+function getRefreshUrl(): string {
+  const b = baseURL || '';
+  if (b) return b.replace(/\/$/, '') + '/auth/refresh';
+  return '/auth/refresh';
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
+  const isAuthRoute = typeof config.url === 'string' && (config.url.includes('/auth/login') || config.url.includes('/auth/refresh'));
+  if (!token && !isAuthRoute) {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+    return new Promise(() => {}); // evita erro na UI; a página redireciona
+  }
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -26,8 +41,12 @@ let refreshPromise: Promise<string | null> | null = null;
 function doRefresh(): Promise<string | null> {
   const refresh = localStorage.getItem('refreshToken');
   if (!refresh) return Promise.resolve(null);
+  const url = getRefreshUrl();
   return axios
-    .post<{ accessToken: string; refreshToken?: string }>(`${baseURL}/auth/refresh`, { refreshToken: refresh })
+    .post<{ accessToken: string; refreshToken?: string }>(url, { refreshToken: refresh }, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000,
+    })
     .then(({ data }) => {
       localStorage.setItem('accessToken', data.accessToken);
       if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
@@ -57,7 +76,8 @@ api.interceptors.response.use(
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     window.location.href = '/login';
-    return Promise.reject(err);
+    // Não rejeita para evitar mensagem "Request failed with status code 401" na UI; a página já está redirecionando.
+    return new Promise(() => {});
   }
 );
 

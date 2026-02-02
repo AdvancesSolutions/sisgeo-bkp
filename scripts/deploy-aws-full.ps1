@@ -1,9 +1,9 @@
 # Deploy completo SIGEO: RDS + App Runner + Amplify + GitHub Secrets + Bootstrap DB
 # Requer: AWS configurado, Docker, gh auth login, imagem ECR já em push (rode deploy-aws.ps1 antes)
-# Uso: .\scripts\deploy-aws-full.ps1 [-AwsRegion us-east-1] [-GhRepo AdvancesSolutions/sisgeo]
+# Uso: .\scripts\deploy-aws-full.ps1 [-AwsRegion sa-east-1] [-GhRepo AdvancesSolutions/sisgeo]
 
 param(
-    [string]$AwsRegion = "us-east-1",
+    [string]$AwsRegion = "sa-east-1",
     [string]$EcrRepo = "sigeo-api",
     [string]$GhRepo = "AdvancesSolutions/sisgeo",
     [switch]$SkipBootstrap,

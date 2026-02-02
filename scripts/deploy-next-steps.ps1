@@ -3,7 +3,7 @@
 # Para secrets: gh auth login (repo scope)
 
 param(
-    [string]$AwsRegion = "us-east-1",
+    [string]$AwsRegion = "sa-east-1",
     [string]$EcrRepo = "sigeo-api",
     [string]$GhRepo = "AdvancesSolutions/sisgeo",
     [switch]$SecretsOnly
