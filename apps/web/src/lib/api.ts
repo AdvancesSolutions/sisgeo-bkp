@@ -76,8 +76,9 @@ api.interceptors.response.use(
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     window.location.href = '/login';
-    // Não rejeita para evitar mensagem "Request failed with status code 401" na UI; a página já está redirecionando.
-    return new Promise(() => {});
+    // Marca o erro para a UI exibir "Sessão expirada" em vez de "Request failed with status code 401".
+    const authErr = Object.assign(err, { __authRedirect: true } as { __authRedirect?: boolean });
+    return Promise.reject(authErr);
   }
 );
 

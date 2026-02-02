@@ -26,7 +26,13 @@ export function Areas() {
         setForm((f) => ({ ...f, locationId: locs[0].id }));
       }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erro ao carregar áreas.');
+      const err = e as { __authRedirect?: boolean; response?: { status?: number }; message?: string };
+      if (err?.__authRedirect || err?.response?.status === 401) {
+        setSuccess(null);
+        setError('Sessão expirada. Faça login novamente.');
+      } else {
+        setError(e instanceof Error ? (e as Error).message : 'Erro ao carregar áreas.');
+      }
     } finally {
       setLoading(false);
     }
