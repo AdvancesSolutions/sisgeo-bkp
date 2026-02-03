@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/getApiErrorMessage';
 import type { Location } from '@sigeo/shared';
+
+const emptyForm = { name: '', address: '' };
 
 export function Locations() {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', address: '' });
+  const [form, setForm] = useState(emptyForm);
 
   const load = async () => {
     try {
@@ -17,13 +21,8 @@ export function Locations() {
       const res = await api.get<{ data: Location[] }>('/locations');
       setLocations(res.data.data ?? []);
     } catch (e: unknown) {
-      const err = e as { __authRedirect?: boolean; response?: { status?: number }; message?: string };
-      if (err?.__authRedirect || err?.response?.status === 401) {
-        setSuccess(null);
-        setError('Sessão expirada. Faça login novamente.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Erro ao carregar locais.');
-      }
+      setSuccess(null);
+      setError(getApiErrorMessage(e, 'Erro ao carregar locais'));
     } finally {
       setLoading(false);
     }
@@ -42,23 +41,49 @@ export function Locations() {
       setSaving(true);
       setError(null);
       setSuccess(null);
-      await api.post('/locations', { name: form.name.trim(), address: form.address.trim() });
-      setForm({ name: '', address: '' });
-      setShowForm(false);
-      setSuccess('Unidade criada.');
+      const payload = { name: form.name.trim(), address: form.address.trim() };
+      if (editingId) {
+        await api.patch(`/locations/${editingId}`, payload);
+        setSuccess('Unidade atualizada.');
+      } else {
+        await api.post('/locations', payload);
+        setForm(emptyForm);
+        setShowForm(false);
+        setSuccess('Unidade criada.');
+      }
+      setEditingId(null);
       await load();
     } catch (e: unknown) {
-      let msg = 'Erro ao salvar.';
-      if (e && typeof e === 'object' && 'response' in e) {
-        const res = (e as { response?: { data?: { message?: string }; status?: number } }).response;
-        msg = res?.data?.message ?? (res?.status === 401 ? 'Faça login novamente.' : `Erro ${res?.status ?? 'rede'}.`);
-      } else if (e instanceof Error) {
-        msg = e.message;
-      }
-      setError(msg);
+      setError(getApiErrorMessage(e, 'Erro ao salvar unidade'));
       setSuccess(null);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startEdit = (loc: Location) => {
+    setEditingId(loc.id);
+    setForm({ name: loc.name, address: loc.address });
+    setShowForm(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(false);
+  };
+
+  const handleDelete = async (loc: Location) => {
+    if (!window.confirm(`Excluir a unidade "${loc.name}"? Esta ação não pode ser desfeita.`)) return;
+    try {
+      setError(null);
+      setSuccess(null);
+      await api.delete(`/locations/${loc.id}`);
+      setSuccess('Unidade excluída.');
+      await load();
+    } catch (e: unknown) {
+      setError(getApiErrorMessage(e, 'Erro ao excluir unidade'));
+      setSuccess(null);
     }
   };
 
@@ -70,10 +95,10 @@ export function Locations() {
         <h1 className="text-xl font-bold text-slate-800">Locais / Unidades</h1>
         <button
           type="button"
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => (editingId ? cancelEdit() : setShowForm(!showForm))}
           className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 text-sm font-medium"
         >
-          {showForm ? 'Cancelar' : 'Novo'}
+          {showForm || editingId ? 'Cancelar' : 'Novo'}
         </button>
       </div>
       {error && (
@@ -86,9 +111,9 @@ export function Locations() {
           {success}
         </div>
       )}
-      {showForm && (
+      {(showForm || editingId) && (
         <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
-          <h2 className="font-medium text-slate-700 mb-3">Novo local</h2>
+          <h2 className="font-medium text-slate-700 mb-3">{editingId ? 'Editar local' : 'Novo local'}</h2>
           <form
             action="#"
             method="post"
@@ -119,7 +144,7 @@ export function Locations() {
               onClick={save}
               className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50"
             >
-              Salvar
+              {saving ? 'Salvando...' : 'Salvar'}
             </button>
           </form>
         </div>
@@ -130,7 +155,7 @@ export function Locations() {
             <tr>
               <th className="px-4 py-3 font-medium text-slate-700">Nome</th>
               <th className="px-4 py-3 font-medium text-slate-700">Endereço</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Ações</th>
+              <th className="px-4 py-3 font-medium text-slate-700 text-center w-40">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -142,7 +167,22 @@ export function Locations() {
                   <td className="px-4 py-3">{r.name}</td>
                   <td className="px-4 py-3">{r.address}</td>
                   <td className="px-4 py-3">
-                    <button type="button" className="text-slate-600 hover:underline mr-2">Editar</button>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(r)}
+                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 shadow-sm border-0 cursor-pointer"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(r)}
+                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-md border border-red-300 text-red-700 bg-white text-sm font-medium hover:bg-red-50 cursor-pointer"
+                      >
+                        Deletar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

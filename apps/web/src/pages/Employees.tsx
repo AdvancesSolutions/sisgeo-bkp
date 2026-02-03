@@ -12,21 +12,24 @@ type EmployeeFormState = {
   unitId: string;
 };
 
+const emptyForm: EmployeeFormState = {
+  name: '',
+  cpf: '',
+  role: '',
+  status: 'ACTIVE',
+  unitId: '',
+};
+
 export function Employees() {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<EmployeeFormState>({
-    name: '',
-    cpf: '',
-    role: '',
-    status: 'ACTIVE',
-    unitId: '',
-  });
+  const [form, setForm] = useState<EmployeeFormState>(emptyForm);
 
   const load = async () => {
     try {
@@ -62,22 +65,61 @@ export function Employees() {
       setSaving(true);
       setError(null);
       setSuccess(null);
-      await api.post('/employees', {
+      const payload = {
         name: form.name.trim(),
         cpf: form.cpf.trim() || undefined,
         role: form.role.trim(),
         status: form.status,
         unitId: form.unitId,
-      });
-      setForm((f) => ({ name: '', cpf: '', role: '', status: 'ACTIVE', unitId: f.unitId }));
-      setShowForm(false);
-      setSuccess('Funcionário cadastrado.');
+      };
+      if (editingId) {
+        await api.patch(`/employees/${editingId}`, payload);
+        setSuccess('Funcionário atualizado.');
+      } else {
+        await api.post('/employees', payload);
+        setForm((f) => ({ ...emptyForm, unitId: f.unitId }));
+        setShowForm(false);
+        setSuccess('Funcionário cadastrado.');
+      }
+      setEditingId(null);
       await load();
     } catch (e: unknown) {
       setError(getApiErrorMessage(e, 'Erro ao salvar funcionário'));
       setSuccess(null);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startEdit = (emp: Employee) => {
+    setEditingId(emp.id);
+    setForm({
+      name: emp.name,
+      cpf: emp.cpf ?? '',
+      role: emp.role,
+      status: emp.status as EmployeeStatus,
+      unitId: emp.unitId,
+    });
+    setShowForm(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm((f) => ({ ...emptyForm, unitId: f.unitId }));
+    setShowForm(false);
+  };
+
+  const handleDelete = async (emp: Employee) => {
+    if (!window.confirm(`Excluir o funcionário "${emp.name}"? Esta ação não pode ser desfeita.`)) return;
+    try {
+      setError(null);
+      setSuccess(null);
+      await api.delete(`/employees/${emp.id}`);
+      setSuccess('Funcionário excluído.');
+      await load();
+    } catch (e: unknown) {
+      setError(getApiErrorMessage(e, 'Erro ao excluir funcionário'));
+      setSuccess(null);
     }
   };
 
@@ -91,10 +133,10 @@ export function Employees() {
         <h1 className="text-xl font-bold text-slate-800">Funcionários</h1>
         <button
           type="button"
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => (editingId ? cancelEdit() : setShowForm(!showForm))}
           className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 text-sm font-medium"
         >
-          {showForm ? 'Cancelar' : 'Novo'}
+          {showForm || editingId ? 'Cancelar' : 'Novo'}
         </button>
       </div>
       {error && (
@@ -107,9 +149,9 @@ export function Employees() {
           {success}
         </div>
       )}
-      {showForm && (
+      {(showForm || editingId) && (
         <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
-          <h2 className="font-medium text-slate-700 mb-3">Novo funcionário</h2>
+          <h2 className="font-medium text-slate-700 mb-3">{editingId ? 'Editar funcionário' : 'Novo funcionário'}</h2>
           <form
             action="#"
             method="post"
@@ -185,7 +227,7 @@ export function Employees() {
               <th className="px-4 py-3 font-medium text-slate-700">CPF</th>
               <th className="px-4 py-3 font-medium text-slate-700">Função</th>
               <th className="px-4 py-3 font-medium text-slate-700">Status</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Ações</th>
+              <th className="px-4 py-3 font-medium text-slate-700 text-center w-40">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -201,7 +243,22 @@ export function Employees() {
                     <span className={r.status === 'ACTIVE' ? 'text-green-600' : 'text-slate-500'}>{r.status}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <button type="button" className="text-slate-600 hover:underline mr-2">Editar</button>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(r)}
+                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 shadow-sm border-0 cursor-pointer"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(r)}
+                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-md border border-red-300 text-red-700 bg-white text-sm font-medium hover:bg-red-50 cursor-pointer"
+                      >
+                        Deletar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
