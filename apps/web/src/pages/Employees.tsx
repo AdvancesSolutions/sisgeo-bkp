@@ -109,6 +109,12 @@ export function Employees() {
     setShowForm(false);
   };
 
+  const statusLabel: Record<string, string> = {
+    ACTIVE: 'Ativo',
+    INACTIVE: 'Inativo',
+    ON_LEAVE: 'Afastado',
+  };
+
   const handleDelete = async (emp: Employee) => {
     if (!window.confirm(`Excluir o funcionário "${emp.name}"? Esta ação não pode ser desfeita.`)) return;
     try {
@@ -124,34 +130,45 @@ export function Employees() {
   };
 
   if (loading) {
-    return <div className="text-slate-600">Carregando...</div>;
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-slate-500 text-sm font-medium">Carregando...</div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold text-slate-800">Funcionários</h1>
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-center gap-4">
+        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Funcionários</h1>
         <button
           type="button"
           onClick={() => (editingId ? cancelEdit() : setShowForm(!showForm))}
-          className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 text-sm font-medium"
+          className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 bg-slate-800 text-white text-sm font-medium shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition"
         >
           {showForm || editingId ? 'Cancelar' : 'Novo'}
         </button>
       </div>
+
+      {/* Alerts */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
         </div>
       )}
       {success && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           {success}
         </div>
       )}
+
+      {/* Form card */}
       {(showForm || editingId) && (
-        <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
-          <h2 className="font-medium text-slate-700 mb-3">{editingId ? 'Editar funcionário' : 'Novo funcionário'}</h2>
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            {editingId ? 'Editar funcionário' : 'Novo funcionário'}
+          </h2>
           <form
             action="#"
             method="post"
@@ -160,32 +177,32 @@ export function Employees() {
               e.stopPropagation();
               handleSubmit(e);
             }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
           >
             <input
               placeholder="Nome"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
               required
             />
             <input
               placeholder="CPF"
               value={form.cpf}
               onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
             />
             <input
               placeholder="Função"
               value={form.role}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
               required
             />
             <select
               value={form.unitId}
               onChange={(e) => setForm((f) => ({ ...f, unitId: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
               required
             >
               <option value="">Unidade</option>
@@ -196,7 +213,7 @@ export function Employees() {
             <select
               value={form.status}
               onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as EmployeeStatus }))}
-              className="px-3 py-2 border rounded-lg"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
             >
               <option value="ACTIVE">Ativo</option>
               <option value="INACTIVE">Inativo</option>
@@ -212,49 +229,66 @@ export function Employees() {
                   setError('Preencha Nome, Função e Unidade.');
                 }
               }}
-              className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 bg-slate-700 text-white text-sm font-medium shadow-sm hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 disabled:opacity-50 transition"
             >
               {saving ? 'Salvando...' : 'Salvar'}
             </button>
           </form>
         </div>
       )}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+
+      {/* Table card */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="px-4 py-3 font-medium text-slate-700">Nome</th>
-              <th className="px-4 py-3 font-medium text-slate-700">CPF</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Função</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Status</th>
-              <th className="px-4 py-3 font-medium text-slate-700 text-center w-40">Ações</th>
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-100/80">
+              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Nome</th>
+              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">CPF</th>
+              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Função</th>
+              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+              <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-600 w-44">Ações</th>
             </tr>
           </thead>
           <tbody>
             {employees.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-6 text-slate-500 text-center">Nenhum funcionário cadastrado.</td></tr>
+              <tr>
+                <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                  Nenhum funcionário cadastrado.
+                </td>
+              </tr>
             ) : (
               employees.map((r) => (
-                <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 py-3">{r.name}</td>
-                  <td className="px-4 py-3">{r.cpf ?? '-'}</td>
-                  <td className="px-4 py-3">{r.role}</td>
-                  <td className="px-4 py-3">
-                    <span className={r.status === 'ACTIVE' ? 'text-green-600' : 'text-slate-500'}>{r.status}</span>
+                <tr
+                  key={r.id}
+                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80 transition"
+                >
+                  <td className="px-6 py-4 font-medium text-slate-800">{r.name}</td>
+                  <td className="px-6 py-4 text-slate-600">{r.cpf ?? '—'}</td>
+                  <td className="px-6 py-4 text-slate-600">{r.role}</td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={
+                        r.status === 'ACTIVE'
+                          ? 'inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700'
+                          : 'text-slate-500'
+                      }
+                    >
+                      {statusLabel[r.status] ?? r.status}
+                    </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-4">
                     <div className="flex flex-wrap items-center justify-center gap-2">
                       <button
                         type="button"
                         onClick={() => startEdit(r)}
-                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 shadow-sm border-0 cursor-pointer"
+                        className="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-slate-700 text-white shadow-sm hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition"
                       >
                         Editar
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(r)}
-                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-md border border-red-300 text-red-700 bg-white text-sm font-medium hover:bg-red-50 cursor-pointer"
+                        className="inline-flex items-center justify-center rounded-lg border-2 border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 transition"
                       >
                         Deletar
                       </button>

@@ -106,34 +106,40 @@ export function Materials() {
   };
 
   if (loading) {
-    return <div className="text-slate-600">Carregando...</div>;
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-slate-500 text-sm font-medium">Carregando...</div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold text-slate-800">Materiais / Estoque</h1>
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="flex flex-wrap justify-between items-center gap-4">
+        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Materiais / Estoque</h1>
         <button
           type="button"
           onClick={() => (editingId ? cancelEdit() : setShowForm(!showForm))}
-          className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 text-sm font-medium"
+          className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 bg-slate-800 text-white text-sm font-medium shadow-sm hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition"
         >
           {showForm || editingId ? 'Cancelar' : 'Novo'}
         </button>
       </div>
+
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-          {error}
-        </div>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
       )}
       {success && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           {success}
         </div>
       )}
+
       {(showForm || editingId) && (
-        <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
-          <h2 className="font-medium text-slate-700 mb-3">{editingId ? 'Editar material' : 'Novo material'}</h2>
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            {editingId ? 'Editar material' : 'Novo material'}
+          </h2>
           <form
             action="#"
             method="post"
@@ -142,20 +148,20 @@ export function Materials() {
               e.stopPropagation();
               save();
             }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
           >
             <input
               placeholder="Nome"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
               required
             />
             <input
               placeholder="Unidade (un, kg, L)"
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
               required
             />
             <input
@@ -163,52 +169,60 @@ export function Materials() {
               placeholder="Estoque"
               value={form.stock}
               onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
               min={0}
             />
             <button
               type="button"
               disabled={saving}
               onClick={save}
-              className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 bg-slate-700 text-white text-sm font-medium shadow-sm hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 disabled:opacity-50 transition"
             >
               {saving ? 'Salvando...' : 'Salvar'}
             </button>
           </form>
         </div>
       )}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="px-4 py-3 font-medium text-slate-700">Nome</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Unidade</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Estoque</th>
-              <th className="px-4 py-3 font-medium text-slate-700 text-center w-40">Ações</th>
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-100/80">
+              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Nome</th>
+              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Unidade</th>
+              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Estoque</th>
+              <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-600 w-44">Ações</th>
             </tr>
           </thead>
           <tbody>
             {materials.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-6 text-slate-500 text-center">Nenhum material cadastrado.</td></tr>
+              <tr>
+                <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                  Nenhum material cadastrado.
+                </td>
+              </tr>
             ) : (
               materials.map((r) => (
-                <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 py-3">{r.name}</td>
-                  <td className="px-4 py-3">{r.unit}</td>
-                  <td className="px-4 py-3">{r.stock}</td>
-                  <td className="px-4 py-3">
+                <tr
+                  key={r.id}
+                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80 transition"
+                >
+                  <td className="px-6 py-4 font-medium text-slate-800">{r.name}</td>
+                  <td className="px-6 py-4 text-slate-600">{r.unit}</td>
+                  <td className="px-6 py-4 text-slate-600">{r.stock}</td>
+                  <td className="px-6 py-4">
                     <div className="flex flex-wrap items-center justify-center gap-2">
                       <button
                         type="button"
                         onClick={() => startEdit(r)}
-                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-md bg-slate-700 text-white text-sm font-medium hover:bg-slate-600 shadow-sm border-0 cursor-pointer"
+                        className="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium bg-slate-700 text-white shadow-sm hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition"
                       >
                         Editar
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(r)}
-                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-md border border-red-300 text-red-700 bg-white text-sm font-medium hover:bg-red-50 cursor-pointer"
+                        className="inline-flex items-center justify-center rounded-lg border-2 border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 transition"
                       >
                         Deletar
                       </button>
