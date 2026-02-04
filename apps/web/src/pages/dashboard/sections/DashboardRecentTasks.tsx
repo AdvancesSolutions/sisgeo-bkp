@@ -173,6 +173,7 @@ const columns: GridColDef<Task>[] = [
     headerName: "Data",
     type: "dateTime",
     width: 120,
+    valueGetter: (value) => (value ? new Date(value) : null),
     valueFormatter: (value) => (value ? dayjs(value).format("DD/MM/YYYY") : "—"),
   },
   {
@@ -180,6 +181,7 @@ const columns: GridColDef<Task>[] = [
     headerName: "Criado",
     width: 140,
     type: "dateTime",
+    valueGetter: (value) => (value ? new Date(value) : null),
     renderCell: (params: GridRenderCellParams<Task, Date>) => {
       const value = params.value;
       if (value) {

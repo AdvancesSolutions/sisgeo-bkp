@@ -4,18 +4,14 @@ import weekday from "dayjs/plugin/weekday";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-import { Breadcrumbs, Button, FormControl, Tooltip, Typography } from "@mui/material";
+import { Box, Breadcrumbs, Button, FormControl, Tooltip, Typography } from "@mui/material";
 import { Grid } from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { type DateRange, DateRangePicker } from "@mui/x-date-pickers-pro";
 
 import NiCalendar from "@/icons/nexture/ni-calendar";
 import NiCellsPlus from "@/icons/nexture/ni-cells-plus";
-import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
-import NiChevronLeftSmall from "@/icons/nexture/ni-chevron-left-small";
-import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
-import NiCross from "@/icons/nexture/ni-cross";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardBanner from "@/pages/dashboard/sections/DashboardBanner";
@@ -30,7 +26,8 @@ dayjs.extend(weekday);
 
 export function Dashboard() {
   const { user } = useAuth();
-  const [dateRange, setDateRange] = useState<DateRange<Dayjs>>([dayjs().weekday(-7), dayjs().weekday(-1)]);
+  const [startDate, setStartDate] = useState<Dayjs>(dayjs().weekday(-7));
+  const [endDate, setEndDate] = useState<Dayjs>(dayjs().weekday(-1));
 
   const displayName = user?.name ?? "Usuário";
 
@@ -52,31 +49,37 @@ export function Dashboard() {
         <Grid size={{ xs: 12, md: "auto" }} className="flex flex-row items-start gap-2">
           <FormControl variant="standard" className="surface-standard mb-0 w-full md:w-auto">
             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt">
-              <DateRangePicker
-                slots={{
-                  openPickerIcon: (props) => (
-                    <NiCalendar {...props} className={cn(props.className, "text-text-secondary")} />
-                  ),
-                  switchViewIcon: (props) => (
-                    <NiChevronDownSmall {...props} className={cn(props.className, "text-text-secondary")} />
-                  ),
-                  leftArrowIcon: (props) => (
-                    <NiChevronLeftSmall {...props} className={cn(props.className, "text-text-secondary")} />
-                  ),
-                  rightArrowIcon: (props) => (
-                    <NiChevronRightSmall {...props} className={cn(props.className, "text-text-secondary")} />
-                  ),
-                  clearIcon: (props) => (
-                    <NiCross {...props} className={cn(props.className, "text-text-secondary")} />
-                  ),
-                }}
-                slotProps={{
-                  textField: { size: "small", variant: "standard" },
-                  desktopPaper: { className: "outlined" },
-                }}
-                value={dateRange}
-                onChange={(newValue) => setDateRange(newValue)}
-              />
+              <Box className="flex flex-row items-center gap-2">
+                <DatePicker
+                  label="Início"
+                  value={startDate}
+                  onChange={(v) => v && setStartDate(v)}
+                  slots={{
+                    openPickerIcon: (props) => (
+                      <NiCalendar {...props} className={cn(props.className, "text-text-secondary")} />
+                    ),
+                  }}
+                  slotProps={{
+                    textField: { size: "small", variant: "standard" },
+                    desktopPaper: { className: "outlined" },
+                  }}
+                />
+                <Typography variant="body2" color="text.secondary">–</Typography>
+                <DatePicker
+                  label="Fim"
+                  value={endDate}
+                  onChange={(v) => v && setEndDate(v)}
+                  slots={{
+                    openPickerIcon: (props) => (
+                      <NiCalendar {...props} className={cn(props.className, "text-text-secondary")} />
+                    ),
+                  }}
+                  slotProps={{
+                    textField: { size: "small", variant: "standard" },
+                    desktopPaper: { className: "outlined" },
+                  }}
+                />
+              </Box>
             </LocalizationProvider>
           </FormControl>
           <Tooltip title="Adicionar widget">

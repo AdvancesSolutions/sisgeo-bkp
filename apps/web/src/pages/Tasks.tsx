@@ -288,6 +288,7 @@ const taskColumns: GridColDef<Task>[] = [
       headerName: "Data",
       type: "dateTime",
       width: 120,
+      valueGetter: (value) => (value ? new Date(value) : null),
       valueFormatter: (value) => (value ? dayjs(value).format("DD/MM/YYYY") : "—"),
     },
     {
