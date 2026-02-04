@@ -1,6 +1,18 @@
 # Amplify: corrigir 404 em refresh (SPA) — checklist e instruções
 
-Se ao acessar diretamente ou dar **F5** em rotas como `/tasks`, `/employees` ou `/tasks/123` aparecer **404**, o Amplify não está servindo `index.html` para essas rotas. O React Router resolve as rotas no cliente; o servidor precisa devolver sempre `index.html` com status **200 (Rewrite)** para caminhos que não são arquivos estáticos.
+Se ao acessar diretamente ou dar **F5** em rotas como `/dashboard`, `/tasks`, `/employees` ou `/tasks/123` aparecer **404**, o Amplify não está servindo `index.html` para essas rotas. O React Router resolve as rotas no cliente; o servidor precisa devolver sempre `index.html` com status **200 (Rewrite)** para caminhos que não são arquivos estáticos.
+
+---
+
+## 0) Aplicar via script (rápido)
+
+Com AWS CLI configurado (`aws configure`):
+
+```powershell
+.\scripts\amplify-apply-spa-rewrite.ps1
+```
+
+Isso aplica a regra em `scripts/amplify-custom-rules.json` no app Amplify. Ajuste o `AppId` no script se seu app for outro.
 
 ---
 

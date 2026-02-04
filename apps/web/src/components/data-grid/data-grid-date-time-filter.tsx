@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import type { GridFilterInputValueProps } from "@mui/x-data-grid-pro";
+import type { GridFilterInputValueProps } from "@mui/x-data-grid";
 import { DateTimePicker } from "@mui/x-date-pickers";
 
 import NiCalendar from "@/icons/nexture/ni-calendar";

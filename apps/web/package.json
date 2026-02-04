@@ -32,7 +32,6 @@
     "dayjs": "^1.11.13",
     "@mui/x-charts": "^8.8.0",
     "@mui/x-data-grid": "^8.8.0",
-    "@mui/x-data-grid-pro": "^8.8.0",
     "@mui/x-date-pickers": "^8.8.0"
   },
   "devDependencies": {

@@ -29,7 +29,6 @@ import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Task, Area, Employee } from "@sigeo/shared";
-import dayjs from "dayjs";
 
 type TaskFormState = {
   areaId: string;
@@ -289,7 +288,8 @@ const taskColumns: GridColDef<Task>[] = [
       type: "dateTime",
       width: 120,
       valueGetter: (value) => (value ? new Date(value) : null),
-      valueFormatter: (value) => (value ? dayjs(value).format("DD/MM/YYYY") : "—"),
+      valueFormatter: (value) =>
+        value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value)) : "",
     },
     {
       field: "status",
