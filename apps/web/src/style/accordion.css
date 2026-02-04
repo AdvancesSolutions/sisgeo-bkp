@@ -1,0 +1,8 @@
+@layer utilities {
+  .MuiAccordionSummary-root .accordion-rotate {
+    @apply transition-transform rtl:rotate-180;
+  }
+  .MuiAccordionSummary-root.Mui-expanded .accordion-rotate {
+    @apply rotate-90 rtl:rotate-90;
+  }
+}

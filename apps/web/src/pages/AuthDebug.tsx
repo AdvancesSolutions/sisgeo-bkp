@@ -1,17 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Bug, LogOut, RefreshCw, User } from 'lucide-react';
-import api from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
-import { authStore } from '@/auth/authStore';
-import type { User as UserType } from '@/contexts/AuthContext';
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+
+import { Alert, Box, Button, Card, CardContent, Typography } from "@mui/material";
+
+import { authStore } from "@/auth/authStore";
+import { useAuth } from "@/contexts/AuthContext";
+import type { User as UserType } from "@/contexts/AuthContext";
+import NiArrowCircleLeft from "@/icons/nexture/ni-arrow-circle-left";
+import NiArrowHistory from "@/icons/nexture/ni-arrow-history";
+import NiArrowOutUp from "@/icons/nexture/ni-arrow-out-up";
+import NiBug from "@/icons/nexture/ni-bug";
+import api from "@/lib/api";
 
 /** Decodifica payload do JWT sem validar (apenas para exibir exp/iat). */
 function decodeJwtPayload(token: string): { exp?: number; iat?: number } | null {
   try {
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length !== 3) return null;
-    const raw = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+    const raw = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
     return JSON.parse(raw) as { exp?: number; iat?: number };
   } catch {
     return null;
@@ -20,6 +26,7 @@ function decodeJwtPayload(token: string): { exp?: number; iat?: number } | null 
 
 export function AuthDebug() {
   const { user, logout, isAuthenticated, isVerifying } = useAuth();
+  const navigate = useNavigate();
   const [meResult, setMeResult] = useState<{ ok: boolean; data?: UserType; error?: string } | null>(null);
   const [simulating, setSimulating] = useState(false);
 
@@ -35,12 +42,15 @@ export function AuthDebug() {
     }
     setMeResult(null);
     api
-      .get<UserType>('/auth/me')
+      .get<UserType>("/auth/me")
       .then(({ data }) => setMeResult({ ok: true, data }))
       .catch((err: unknown) =>
         setMeResult({
           ok: false,
-          error: (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ?? (err as { message?: string })?.message ?? 'Erro ao chamar /auth/me',
+          error:
+            (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ??
+            (err as { message?: string })?.message ??
+            "Erro ao chamar /auth/me",
         }),
       );
   }, [isVerifying, accessToken]);
@@ -48,80 +58,141 @@ export function AuthDebug() {
   async function handleSimulateExpiry() {
     const refresh = authStore.getRefreshToken();
     if (!refresh) {
-      setMeResult({ ok: false, error: 'Sem refreshToken para testar.' });
+      setMeResult({ ok: false, error: "Sem refreshToken para testar." });
       return;
     }
     setSimulating(true);
     setMeResult(null);
     try {
-      const { data } = await api.post<{ accessToken: string; refreshToken?: string }>('/auth/refresh', { refreshToken: refresh });
+      const { data } = await api.post<{ accessToken: string; refreshToken?: string }>("/auth/refresh", {
+        refreshToken: refresh,
+      });
       authStore.setTokens({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken ?? refresh,
       });
-      const { data: meData } = await api.get<UserType>('/auth/me');
+      const { data: meData } = await api.get<UserType>("/auth/me");
       setMeResult({ ok: true, data: meData });
     } catch (err: unknown) {
       const res = (err as { response?: { data?: { message?: string } } })?.response;
-      setMeResult({ ok: false, error: res?.data?.message ?? 'Refresh falhou.' });
+      setMeResult({ ok: false, error: res?.data?.message ?? "Refresh falhou." });
     } finally {
       setSimulating(false);
     }
   }
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
+
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <Bug className="w-6 h-6 text-slate-600" />
-        <h1 className="text-xl font-bold text-slate-800">Auth Debug (temporário)</h1>
-      </div>
+    <Box>
+      <Box className="mb-4 flex flex-row items-center justify-between">
+        <Box className="flex items-center gap-2">
+          <NiBug size={24} className="text-text-primary" />
+          <Typography variant="h6" component="h1" className="text-text-primary">
+            Debug de autenticação
+          </Typography>
+        </Box>
+      </Box>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-2">
-        <p><strong>isAuthenticated:</strong> {String(isAuthenticated)}</p>
-        <p><strong>isVerifying:</strong> {String(isVerifying)}</p>
-        <p><strong>Token existe:</strong> {accessToken ? 'Sim' : 'Não'}</p>
-        {payload && (
-          <>
-            <p><strong>exp (token):</strong> {expDate?.toISOString() ?? '—'} {isExpired !== null && (isExpired ? '(expirado)' : '(válido)')}</p>
-            <p><strong>iat:</strong> {payload.iat ? new Date(payload.iat * 1000).toISOString() : '—'}</p>
-          </>
-        )}
-      </div>
+      {meResult && !meResult.ok && (
+        <Alert severity="error" className="mb-4" onClose={() => setMeResult(null)}>
+          {meResult.error}
+        </Alert>
+      )}
 
-      <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-2">
-        <div className="flex items-center gap-2">
-          <User className="w-5 h-5 text-slate-600" />
-          <strong>GET /auth/me</strong>
-        </div>
-        {meResult === null && authStore.isAuthenticated() && <p className="text-slate-500">Carregando...</p>}
-        {meResult?.ok && <pre className="text-sm bg-slate-50 p-2 rounded overflow-auto">{JSON.stringify(meResult.data, null, 2)}</pre>}
-        {meResult && !meResult.ok && <p className="text-red-600">{meResult.error}</p>}
-      </div>
+      <Card className="mb-4">
+        <CardContent>
+          <Typography variant="subtitle2" className="mb-2 font-semibold text-text-primary">
+            Estado da sessão
+          </Typography>
+          <Box className="flex flex-col gap-1 text-sm">
+            <Typography variant="body2" className="text-text-secondary">
+              <strong>isAuthenticated:</strong> {String(isAuthenticated)}
+            </Typography>
+            <Typography variant="body2" className="text-text-secondary">
+              <strong>isVerifying:</strong> {String(isVerifying)}
+            </Typography>
+            <Typography variant="body2" className="text-text-secondary">
+              <strong>Token existe:</strong> {accessToken ? "Sim" : "Não"}
+            </Typography>
+            {payload && (
+              <>
+                <Typography variant="body2" className="text-text-secondary">
+                  <strong>exp (token):</strong> {expDate?.toISOString() ?? "—"}{" "}
+                  {isExpired !== null && (isExpired ? "(expirado)" : "(válido)")}
+                </Typography>
+                <Typography variant="body2" className="text-text-secondary">
+                  <strong>iat:</strong> {payload.iat ? new Date(payload.iat * 1000).toISOString() : "—"}
+                </Typography>
+              </>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={handleSimulateExpiry}
-          disabled={simulating || !authStore.getRefreshToken()}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 disabled:opacity-50"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Testar refresh (renova tokens)
-        </button>
-        <button
-          type="button"
-          onClick={() => { logout(); window.location.href = '/login'; }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </button>
-        <Link to="/dashboard" className="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50">
-          Voltar ao painel
-        </Link>
-      </div>
+      <Card className="mb-4">
+        <CardContent>
+          <Typography variant="subtitle2" className="mb-2 font-semibold text-text-primary">
+            GET /auth/me
+          </Typography>
+          {meResult === null && authStore.isAuthenticated() && (
+            <Typography variant="body2" className="text-text-secondary">
+              Carregando…
+            </Typography>
+          )}
+          {meResult?.ok && (
+            <Box
+              component="pre"
+              className="max-h-48 overflow-auto rounded bg-grey-25 p-2 text-xs text-text-primary"
+            >
+              {JSON.stringify(meResult.data, null, 2)}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
 
-      <p className="text-slate-500 text-sm">Usuário em memória: {user ? `${user.name} (${user.role})` : '—'}</p>
-    </div>
+      <Card className="mb-4">
+        <CardContent>
+          <Box className="flex flex-wrap gap-2">
+            <Button
+              variant="outlined"
+              color="warning"
+              size="medium"
+              disabled={simulating || !authStore.getRefreshToken()}
+              startIcon={<NiArrowHistory size="medium" />}
+              onClick={handleSimulateExpiry}
+            >
+              {simulating ? "Testando…" : "Testar refresh (renova tokens)"}
+            </Button>
+            <Button
+              variant="contained"
+              color="grey"
+              size="medium"
+              startIcon={<NiArrowOutUp size="medium" />}
+              onClick={handleLogout}
+            >
+              Logout
+            </Button>
+            <Button
+              variant="outlined"
+              color="grey"
+              size="medium"
+              component={Link}
+              to="/dashboard"
+              startIcon={<NiArrowCircleLeft size="medium" />}
+            >
+              Voltar ao painel
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Typography variant="body2" className="text-text-secondary">
+        Usuário em memória: {user ? `${user.name} (${user.role})` : "—"}
+      </Typography>
+    </Box>
   );
 }

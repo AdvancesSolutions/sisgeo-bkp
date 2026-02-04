@@ -1,53 +1,46 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { AdminOnly } from '@/components/AdminOnly';
-import { MainLayout } from '@/components/Layout/MainLayout';
-import { Login } from '@/pages/Login';
-import { Dashboard } from '@/pages/Dashboard';
-import { Employees } from '@/pages/Employees';
-import { Locations } from '@/pages/Locations';
-import { Areas } from '@/pages/Areas';
-import { Tasks } from '@/pages/Tasks';
-import { TaskDetail } from '@/pages/TaskDetail';
-import { Validation } from '@/pages/Validation';
-import { Materials } from '@/pages/Materials';
-import { TimeClock } from '@/pages/TimeClock';
-import { Reports } from '@/pages/Reports';
-import { Audit } from '@/pages/Audit';
-import { AuthDebug } from '@/pages/AuthDebug';
+import { Suspense } from "react";
+import { useTranslation } from "react-i18next";
+import { BrowserRouter } from "react-router-dom";
+
+import { Box, StyledEngineProvider } from "@mui/material";
+
+import BackgroundWrapper from "@/components/layout/containers/background-wrapper";
+import SnackbarWrapper from "@/components/layout/containers/snackbar-wrapper";
+import LayoutContextProvider from "@/components/layout/layout-context";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { CompanyLogoProvider } from "@/contexts/CompanyLogoContext";
+import AppRoutes from "@/routes";
+import ThemeProvider from "@/theme/theme-provider";
+import Loading from "@/pages/Loading";
 
 function App() {
+  const { i18n } = useTranslation();
+  const direction = i18n.language === "ar" ? "rtl" : "ltr";
+
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <MainLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="auth-debug" element={<AuthDebug />} />
-            <Route path="employees" element={<AdminOnly><Employees /></AdminOnly>} />
-            <Route path="locations" element={<AdminOnly><Locations /></AdminOnly>} />
-            <Route path="areas" element={<AdminOnly><Areas /></AdminOnly>} />
-            <Route path="tasks" element={<Tasks />} />
-            <Route path="tasks/:id" element={<TaskDetail />} />
-            <Route path="validation" element={<AdminOnly><Validation /></AdminOnly>} />
-            <Route path="materials" element={<AdminOnly><Materials /></AdminOnly>} />
-            <Route path="timeclock" element={<TimeClock />} />
-            <Route path="reports" element={<AdminOnly><Reports /></AdminOnly>} />
-            <Route path="audit" element={<AdminOnly><Audit /></AdminOnly>} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AuthProvider>
+      <StyledEngineProvider enableCssLayer>
+        <Box
+          lang={i18n.language}
+          dir={direction}
+          className="font-mulish font-urbanist relative overflow-hidden antialiased"
+        >
+          <ThemeProvider>
+            <LayoutContextProvider>
+              <BackgroundWrapper />
+              <SnackbarWrapper>
+                <AuthProvider>
+                  <CompanyLogoProvider>
+                    <Suspense fallback={<Loading />}>
+                      <AppRoutes />
+                    </Suspense>
+                  </CompanyLogoProvider>
+                </AuthProvider>
+              </SnackbarWrapper>
+            </LayoutContextProvider>
+          </ThemeProvider>
+        </Box>
+      </StyledEngineProvider>
     </BrowserRouter>
   );
 }

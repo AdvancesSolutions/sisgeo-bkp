@@ -1,9 +1,26 @@
-import { useEffect, useState } from 'react';
-import api from '@/lib/api';
-import { getApiErrorMessage } from '@/lib/getApiErrorMessage';
-import type { Location } from '@sigeo/shared';
+import { useEffect, useState } from "react";
 
-const emptyForm = { name: '', address: '' };
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
+
+import NiArrowDown from "@/icons/nexture/ni-arrow-down";
+import NiArrowUp from "@/icons/nexture/ni-arrow-up";
+import NiCross from "@/icons/nexture/ni-cross";
+import NiPlus from "@/icons/nexture/ni-plus";
+import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import type { Location } from "@sigeo/shared";
+
+const emptyForm = { name: "", address: "" };
 
 export function Locations() {
   const [showForm, setShowForm] = useState(false);
@@ -18,11 +35,11 @@ export function Locations() {
   const load = async () => {
     try {
       setError(null);
-      const res = await api.get<{ data: Location[] }>('/locations');
+      const res = await api.get<{ data: Location[] }>("/locations");
       setLocations(res.data.data ?? []);
     } catch (e: unknown) {
       setSuccess(null);
-      setError(getApiErrorMessage(e, 'Erro ao carregar locais'));
+      setError(getApiErrorMessage(e, "Erro ao carregar locais"));
     } finally {
       setLoading(false);
     }
@@ -34,7 +51,7 @@ export function Locations() {
 
   const save = async () => {
     if (!form.name.trim() || !form.address.trim()) {
-      setError('Preencha Nome e Endereço.');
+      setError("Preencha Nome e Endereço.");
       return;
     }
     try {
@@ -44,17 +61,17 @@ export function Locations() {
       const payload = { name: form.name.trim(), address: form.address.trim() };
       if (editingId) {
         await api.patch(`/locations/${editingId}`, payload);
-        setSuccess('Unidade atualizada.');
+        setSuccess("Unidade atualizada.");
       } else {
-        await api.post('/locations', payload);
+        await api.post("/locations", payload);
         setForm(emptyForm);
         setShowForm(false);
-        setSuccess('Unidade criada.');
+        setSuccess("Unidade criada.");
       }
       setEditingId(null);
       await load();
     } catch (e: unknown) {
-      setError(getApiErrorMessage(e, 'Erro ao salvar unidade'));
+      setError(getApiErrorMessage(e, "Erro ao salvar unidade"));
       setSuccess(null);
     } finally {
       setSaving(false);
@@ -79,133 +96,156 @@ export function Locations() {
       setError(null);
       setSuccess(null);
       await api.delete(`/locations/${loc.id}`);
-      setSuccess('Unidade excluída.');
+      setSuccess("Unidade excluída.");
       await load();
     } catch (e: unknown) {
-      setError(getApiErrorMessage(e, 'Erro ao excluir unidade'));
+      setError(getApiErrorMessage(e, "Erro ao excluir unidade"));
       setSuccess(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-slate-500 text-sm font-medium">Carregando...</div>
-      </div>
+      <Box className="flex min-h-40 items-center justify-center">
+        <Typography variant="body2" className="text-text-secondary">
+          Carregando…
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Locais / Unidades</h1>
-        <button
-          type="button"
+    <Box>
+      <Box className="mb-4 flex flex-row items-center justify-between">
+        <Typography variant="h6" component="h1" className="text-text-primary">
+          Locais / Unidades
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          size="medium"
+          startIcon={<NiPlus size="medium" />}
           onClick={() => (editingId ? cancelEdit() : setShowForm(!showForm))}
-          className="inline-flex items-center justify-center rounded-theme-lg px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 transition"
         >
-          {showForm || editingId ? 'Cancelar' : 'Novo'}
-        </button>
-      </div>
+          {showForm || editingId ? "Cancelar" : "Novo"}
+        </Button>
+      </Box>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
+        <Alert severity="error" className="mb-4" onClose={() => setError(null)}>
+          {error}
+        </Alert>
       )}
       {success && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <Alert severity="success" className="mb-4" onClose={() => setSuccess(null)}>
           {success}
-        </div>
+        </Alert>
       )}
 
       {(showForm || editingId) && (
-        <div className="rounded-theme-2xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">
-            {editingId ? 'Editar local' : 'Novo local'}
-          </h2>
-          <form
-            action="#"
-            method="post"
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              save();
-            }}
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            <input
-              placeholder="Nome"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-              required
-            />
-            <input
-              placeholder="Endereço"
-              value={form.address}
-              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-              required
-            />
-            <button
-              type="button"
-              disabled={saving}
-              onClick={save}
-              className="inline-flex items-center justify-center rounded-theme-lg px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 disabled:opacity-50 transition"
+        <Card className="mb-4">
+          <CardContent>
+            <Typography variant="subtitle1" className="mb-3 font-semibold text-text-primary">
+              {editingId ? "Editar local" : "Novo local"}
+            </Typography>
+            <Box
+              component="form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                save();
+              }}
+              className="flex flex-wrap gap-4"
             >
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </form>
-        </div>
+              <TextField
+                label="Nome"
+                size="small"
+                required
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                className="min-w-48"
+              />
+              <TextField
+                label="Endereço"
+                size="small"
+                required
+                value={form.address}
+                onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                className="min-w-64"
+              />
+              <Button type="submit" variant="contained" color="primary" disabled={saving}>
+                {saving ? "Salvando…" : "Salvar"}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="rounded-theme-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-100/80">
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Nome</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Endereço</th>
-              <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-600 w-44">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {locations.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="px-6 py-12 text-center text-slate-500">
-                  Nenhuma unidade cadastrada.
-                </td>
-              </tr>
-            ) : (
-              locations.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80 transition"
-                >
-                  <td className="px-6 py-4 font-medium text-slate-800">{r.name}</td>
-                  <td className="px-6 py-4 text-slate-600">{r.address}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(r)}
-                        className="inline-flex items-center justify-center rounded-theme px-3 py-2 text-sm font-medium bg-primary text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 transition"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(r)}
-                        className="inline-flex items-center justify-center rounded-lg border-2 border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 transition"
-                      >
-                        Deletar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <Card>
+        <CardContent className="p-0">
+          <Box className="min-h-64">
+            <DataGrid
+              rows={locations}
+              columns={locationColumns(startEdit, handleDelete)}
+              hideFooter={locations.length <= 100}
+              pageSizeOptions={[10, 25, 50]}
+              disableColumnFilter
+              disableColumnSelector
+              disableDensitySelector
+              columnHeaderHeight={40}
+              disableRowSelectionOnClick
+              className="border-none"
+              getRowId={(row) => row.id}
+              slots={{
+                columnSortedDescendingIcon: () => <NiArrowDown size="small" />,
+                columnSortedAscendingIcon: () => <NiArrowUp size="small" />,
+                noRowsOverlay: () => (
+                  <Box className="flex h-full items-center justify-center">
+                    <Typography variant="body2" className="text-text-secondary">
+                      Nenhuma unidade cadastrada.
+                    </Typography>
+                  </Box>
+                ),
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
+}
+
+function locationColumns(
+  startEdit: (loc: Location) => void,
+  handleDelete: (loc: Location) => void,
+): GridColDef<Location>[] {
+  return [
+    { field: "name", headerName: "Nome", flex: 1, minWidth: 160 },
+    { field: "address", headerName: "Endereço", flex: 1, minWidth: 200 },
+    {
+      field: "id",
+      headerName: "Ações",
+      width: 180,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams<Location, string>) => {
+        const loc = params.row;
+        return (
+          <Box className="flex gap-2">
+            <Button size="small" variant="contained" color="primary" onClick={() => startEdit(loc)}>
+              Editar
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              startIcon={<NiCross size="small" />}
+              onClick={() => handleDelete(loc)}
+            >
+              Deletar
+            </Button>
+          </Box>
+        );
+      },
+    },
+  ];
 }

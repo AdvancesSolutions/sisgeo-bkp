@@ -1,15 +1,27 @@
-import { useEffect, useState } from 'react';
-import api from '@/lib/api';
-import { getApiErrorMessage } from '@/lib/getApiErrorMessage';
-import type { Material } from '@sigeo/shared';
+import { useEffect, useState } from "react";
 
-type MaterialFormState = {
-  name: string;
-  unit: string;
-  stock: string;
-};
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
 
-const emptyForm: MaterialFormState = { name: '', unit: '', stock: '' };
+import NiArrowDown from "@/icons/nexture/ni-arrow-down";
+import NiArrowUp from "@/icons/nexture/ni-arrow-up";
+import NiCross from "@/icons/nexture/ni-cross";
+import NiPlus from "@/icons/nexture/ni-plus";
+import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import type { Material } from "@sigeo/shared";
+
+type MaterialFormState = { name: string; unit: string; stock: string };
+const emptyForm: MaterialFormState = { name: "", unit: "", stock: "" };
 
 export function Materials() {
   const [showForm, setShowForm] = useState(false);
@@ -24,11 +36,11 @@ export function Materials() {
   const load = async () => {
     try {
       setError(null);
-      const res = await api.get<{ data: Material[] }>('/materials');
+      const res = await api.get<{ data: Material[] }>("/materials");
       setMaterials(res.data.data ?? []);
     } catch (e: unknown) {
       setSuccess(null);
-      setError(getApiErrorMessage(e, 'Erro ao carregar materiais'));
+      setError(getApiErrorMessage(e, "Erro ao carregar materiais"));
     } finally {
       setLoading(false);
     }
@@ -40,12 +52,12 @@ export function Materials() {
 
   const save = async () => {
     if (!form.name.trim() || !form.unit.trim()) {
-      setError('Preencha Nome e Unidade.');
+      setError("Preencha Nome e Unidade.");
       return;
     }
     const stockNum = form.stock.trim() ? Number(form.stock) : 0;
     if (Number.isNaN(stockNum) || stockNum < 0) {
-      setError('Estoque deve ser um número maior ou igual a zero.');
+      setError("Estoque deve ser um número maior ou igual a zero.");
       return;
     }
     try {
@@ -58,21 +70,21 @@ export function Materials() {
           unit: form.unit.trim(),
           stock: stockNum,
         });
-        setSuccess('Material atualizado.');
+        setSuccess("Material atualizado.");
       } else {
-        await api.post('/materials', {
+        await api.post("/materials", {
           name: form.name.trim(),
           unit: form.unit.trim(),
           stock: stockNum,
         });
         setForm(emptyForm);
         setShowForm(false);
-        setSuccess('Material cadastrado.');
+        setSuccess("Material cadastrado.");
       }
       setEditingId(null);
       await load();
     } catch (e: unknown) {
-      setError(getApiErrorMessage(e, 'Erro ao salvar material'));
+      setError(getApiErrorMessage(e, "Erro ao salvar material"));
       setSuccess(null);
     } finally {
       setSaving(false);
@@ -97,143 +109,166 @@ export function Materials() {
       setError(null);
       setSuccess(null);
       await api.delete(`/materials/${m.id}`);
-      setSuccess('Material excluído.');
+      setSuccess("Material excluído.");
       await load();
     } catch (e: unknown) {
-      setError(getApiErrorMessage(e, 'Erro ao excluir material'));
+      setError(getApiErrorMessage(e, "Erro ao excluir material"));
       setSuccess(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-slate-500 text-sm font-medium">Carregando...</div>
-      </div>
+      <Box className="flex min-h-40 items-center justify-center">
+        <Typography variant="body2" className="text-text-secondary">
+          Carregando…
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Materiais / Estoque</h1>
-        <button
-          type="button"
+    <Box>
+      <Box className="mb-4 flex flex-row items-center justify-between">
+        <Typography variant="h6" component="h1" className="text-text-primary">
+          Materiais / Estoque
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          size="medium"
+          startIcon={<NiPlus size="medium" />}
           onClick={() => (editingId ? cancelEdit() : setShowForm(!showForm))}
-          className="inline-flex items-center justify-center rounded-theme-lg px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 transition"
         >
-          {showForm || editingId ? 'Cancelar' : 'Novo'}
-        </button>
-      </div>
+          {showForm || editingId ? "Cancelar" : "Novo"}
+        </Button>
+      </Box>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
+        <Alert severity="error" className="mb-4" onClose={() => setError(null)}>
+          {error}
+        </Alert>
       )}
       {success && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <Alert severity="success" className="mb-4" onClose={() => setSuccess(null)}>
           {success}
-        </div>
+        </Alert>
       )}
 
       {(showForm || editingId) && (
-        <div className="rounded-theme-2xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">
-            {editingId ? 'Editar material' : 'Novo material'}
-          </h2>
-          <form
-            action="#"
-            method="post"
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              save();
-            }}
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            <input
-              placeholder="Nome"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-              required
-            />
-            <input
-              placeholder="Unidade (un, kg, L)"
-              value={form.unit}
-              onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-              required
-            />
-            <input
-              type="number"
-              placeholder="Estoque"
-              value={form.stock}
-              onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-              min={0}
-            />
-            <button
-              type="button"
-              disabled={saving}
-              onClick={save}
-              className="inline-flex items-center justify-center rounded-theme-lg px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 disabled:opacity-50 transition"
+        <Card className="mb-4">
+          <CardContent>
+            <Typography variant="subtitle1" className="mb-3 font-semibold text-text-primary">
+              {editingId ? "Editar material" : "Novo material"}
+            </Typography>
+            <Box
+              component="form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                save();
+              }}
+              className="flex flex-wrap gap-4"
             >
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </form>
-        </div>
+              <TextField
+                label="Nome"
+                size="small"
+                required
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                className="min-w-48"
+              />
+              <TextField
+                label="Unidade (un, kg, L)"
+                size="small"
+                required
+                value={form.unit}
+                onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+                className="min-w-40"
+              />
+              <TextField
+                type="number"
+                label="Estoque"
+                size="small"
+                value={form.stock}
+                onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+                slotProps={{ htmlInput: { min: 0 } }}
+                className="min-w-32"
+              />
+              <Button type="submit" variant="contained" color="primary" disabled={saving}>
+                {saving ? "Salvando…" : "Salvar"}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="rounded-theme-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-100/80">
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Nome</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Unidade</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Estoque</th>
-              <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-600 w-44">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {materials.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
-                  Nenhum material cadastrado.
-                </td>
-              </tr>
-            ) : (
-              materials.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80 transition"
-                >
-                  <td className="px-6 py-4 font-medium text-slate-800">{r.name}</td>
-                  <td className="px-6 py-4 text-slate-600">{r.unit}</td>
-                  <td className="px-6 py-4 text-slate-600">{r.stock}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(r)}
-                        className="inline-flex items-center justify-center rounded-theme px-3 py-2 text-sm font-medium bg-primary text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 transition"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(r)}
-                        className="inline-flex items-center justify-center rounded-lg border-2 border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 transition"
-                      >
-                        Deletar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <Card>
+        <CardContent className="p-0">
+          <Box className="min-h-64">
+            <DataGrid
+              rows={materials}
+              columns={materialColumns(startEdit, handleDelete)}
+              hideFooter={materials.length <= 100}
+              pageSizeOptions={[10, 25, 50]}
+              disableColumnFilter
+              disableColumnSelector
+              disableDensitySelector
+              columnHeaderHeight={40}
+              disableRowSelectionOnClick
+              className="border-none"
+              getRowId={(row) => row.id}
+              slots={{
+                columnSortedDescendingIcon: () => <NiArrowDown size="small" />,
+                columnSortedAscendingIcon: () => <NiArrowUp size="small" />,
+                noRowsOverlay: () => (
+                  <Box className="flex h-full items-center justify-center">
+                    <Typography variant="body2" className="text-text-secondary">
+                      Nenhum material cadastrado.
+                    </Typography>
+                  </Box>
+                ),
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
+}
+
+function materialColumns(
+  startEdit: (m: Material) => void,
+  handleDelete: (m: Material) => void,
+): GridColDef<Material>[] {
+  return [
+    { field: "name", headerName: "Nome", flex: 1, minWidth: 160 },
+    { field: "unit", headerName: "Unidade", width: 100 },
+    { field: "stock", headerName: "Estoque", width: 100, type: "number" },
+    {
+      field: "id",
+      headerName: "Ações",
+      width: 180,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams<Material, string>) => {
+        const m = params.row;
+        return (
+          <Box className="flex gap-2">
+            <Button size="small" variant="contained" color="primary" onClick={() => startEdit(m)}>
+              Editar
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              startIcon={<NiCross size="small" />}
+              onClick={() => handleDelete(m)}
+            >
+              Deletar
+            </Button>
+          </Box>
+        );
+      },
+    },
+  ];
 }

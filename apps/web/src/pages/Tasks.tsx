@@ -1,10 +1,35 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ExternalLink, Plus } from 'lucide-react';
-import api from '@/lib/api';
-import { getApiErrorMessage } from '@/lib/getApiErrorMessage';
-import { useAuth } from '@/contexts/AuthContext';
-import type { Task, Area, Employee } from '@sigeo/shared';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
+
+import NiArrowDown from "@/icons/nexture/ni-arrow-down";
+import NiArrowUp from "@/icons/nexture/ni-arrow-up";
+import NiCheckSquare from "@/icons/nexture/ni-check-square";
+import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import NiChevronRightSmall from "@/icons/nexture/ni-chevron-right-small";
+import NiExclamationSquare from "@/icons/nexture/ni-exclamation-square";
+import NiPlus from "@/icons/nexture/ni-plus";
+import NiPlusSquare from "@/icons/nexture/ni-plus-square";
+import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Task, Area, Employee } from "@sigeo/shared";
+import dayjs from "dayjs";
 
 type TaskFormState = {
   areaId: string;
@@ -14,15 +39,14 @@ type TaskFormState = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Pendente',
-  IN_PROGRESS: 'Em execução',
-  IN_REVIEW: 'Em validação',
-  DONE: 'Concluída',
-  REJECTED: 'Rejeitada',
+  PENDING: "Pendente",
+  IN_PROGRESS: "Em execução",
+  IN_REVIEW: "Em validação",
+  DONE: "Concluída",
+  REJECTED: "Rejeitada",
 };
 
 export function Tasks() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -33,19 +57,19 @@ export function Tasks() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [form, setForm] = useState<TaskFormState>({
-    areaId: '',
-    employeeId: '',
-    scheduledDate: '',
-    title: '',
+    areaId: "",
+    employeeId: "",
+    scheduledDate: "",
+    title: "",
   });
 
   const load = async () => {
     try {
       setError(null);
       const [tasksRes, areasRes, empsRes] = await Promise.all([
-        api.get<{ data: Task[] }>('/tasks'),
-        api.get<{ data: Area[] }>('/areas'),
-        api.get<{ data: Employee[] }>('/employees'),
+        api.get<{ data: Task[] }>("/tasks"),
+        api.get<{ data: Area[] }>("/areas"),
+        api.get<{ data: Employee[] }>("/employees"),
       ]);
       const a = areasRes.data.data ?? [];
       setTasks(tasksRes.data.data ?? []);
@@ -56,7 +80,7 @@ export function Tasks() {
       }
     } catch (e: unknown) {
       setSuccess(null);
-      setError(getApiErrorMessage(e, 'Erro ao carregar tarefas'));
+      setError(getApiErrorMessage(e, "Erro ao carregar tarefas"));
     } finally {
       setLoading(false);
     }
@@ -68,166 +92,280 @@ export function Tasks() {
 
   const save = async () => {
     if (!form.areaId || !form.scheduledDate) {
-      setError('Selecione a área e a data.');
+      setError("Selecione a área e a data.");
       return;
     }
     try {
       setSaving(true);
       setError(null);
       setSuccess(null);
-      await api.post('/tasks', {
+      await api.post("/tasks", {
         areaId: form.areaId,
         employeeId: form.employeeId || undefined,
         scheduledDate: form.scheduledDate,
         title: form.title || undefined,
       });
-      setForm((f) => ({ ...f, scheduledDate: '', title: '' }));
+      setForm((f) => ({ ...f, scheduledDate: "", title: "" }));
       setShowForm(false);
-      setSuccess('Tarefa cadastrada.');
+      setSuccess("Tarefa cadastrada.");
       await load();
     } catch (e: unknown) {
-      setError(getApiErrorMessage(e, 'Erro ao salvar tarefa'));
+      setError(getApiErrorMessage(e, "Erro ao salvar tarefa"));
       setSuccess(null);
     } finally {
       setSaving(false);
     }
   };
 
-  const formatDate = (d: Date | string) => {
-    try {
-      const date = typeof d === 'string' ? new Date(d) : d;
-      return date.toLocaleDateString('pt-BR');
-    } catch {
-      return String(d);
-    }
-  };
-
   if (loading) {
-    return <div className="text-slate-600">Carregando...</div>;
+    return (
+      <Box className="flex min-h-40 items-center justify-center">
+        <Typography variant="body2" className="text-text-secondary">
+          Carregando…
+        </Typography>
+      </Box>
+    );
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold text-slate-800">Tarefas / Serviços</h1>
-        {user?.role === 'ADMIN' && (
-          <button
-            type="button"
+    <Box>
+      <Box className="mb-4 flex flex-row items-center justify-between">
+        <Typography variant="h6" component="h1" className="text-text-primary">
+          Tarefas / Serviços
+        </Typography>
+        {user?.role === "ADMIN" && (
+          <Button
+            variant="contained"
+            color="primary"
+            size="medium"
+            startIcon={<NiPlus size="medium" />}
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 text-sm font-medium"
           >
-            <Plus className="w-4 h-4" />
-            {showForm ? 'Cancelar' : 'Nova'}
-          </button>
+            {showForm ? "Cancelar" : "Nova"}
+          </Button>
         )}
-      </div>
+      </Box>
+
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+        <Alert severity="error" className="mb-4" onClose={() => setError(null)}>
           {error}
-        </div>
+        </Alert>
       )}
       {success && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+        <Alert severity="success" className="mb-4" onClose={() => setSuccess(null)}>
           {success}
-        </div>
+        </Alert>
       )}
+
       {showForm && (
-        <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
-          <h2 className="font-medium text-slate-700 mb-3">Nova tarefa</h2>
-          <form
-            action="#"
-            method="post"
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              save();
-            }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
-          >
-            <select
-              value={form.areaId}
-              onChange={(e) => setForm((f) => ({ ...f, areaId: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
-              required
+        <Card className="mb-4">
+          <CardContent>
+            <Typography variant="subtitle1" className="mb-3 font-semibold text-text-primary">
+              Nova tarefa
+            </Typography>
+            <Box
+              component="form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                save();
+              }}
+              className="flex flex-wrap gap-4"
             >
-              <option value="">Área</option>
-              {areas.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-            <select
-              value={form.employeeId}
-              onChange={(e) => setForm((f) => ({ ...f, employeeId: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
-            >
-              <option value="">Funcionário (opcional)</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>{emp.name}</option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={form.scheduledDate}
-              onChange={(e) => setForm((f) => ({ ...f, scheduledDate: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
-              required
-            />
-            <input
-              placeholder="Título (opcional)"
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              className="px-3 py-2 border rounded-lg"
-            />
-            <button
-              type="button"
-              disabled={saving}
-              onClick={save}
-              className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50"
-            >
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </form>
-        </div>
+              <FormControl variant="outlined" size="small" required className="min-w-48">
+                <InputLabel>Área</InputLabel>
+                <Select
+                  value={form.areaId}
+                  onChange={(e) => setForm((f) => ({ ...f, areaId: e.target.value }))}
+                  label="Área"
+                  IconComponent={NiChevronDownSmall}
+                  MenuProps={{ className: "outlined" }}
+                >
+                  {areas.map((a) => (
+                    <MenuItem key={a.id} value={a.id}>
+                      {a.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl variant="outlined" size="small" className="min-w-48">
+                <InputLabel>Funcionário (opcional)</InputLabel>
+                <Select
+                  value={form.employeeId}
+                  onChange={(e) => setForm((f) => ({ ...f, employeeId: e.target.value }))}
+                  label="Funcionário (opcional)"
+                  IconComponent={NiChevronDownSmall}
+                  MenuProps={{ className: "outlined" }}
+                >
+                  <MenuItem value="">Nenhum</MenuItem>
+                  {employees.map((emp) => (
+                    <MenuItem key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                type="date"
+                label="Data"
+                size="small"
+                required
+                value={form.scheduledDate}
+                onChange={(e) => setForm((f) => ({ ...f, scheduledDate: e.target.value }))}
+                className="min-w-40"
+              />
+              <TextField
+                label="Título (opcional)"
+                size="small"
+                value={form.title}
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                className="min-w-48"
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={saving}
+              >
+                {saving ? "Salvando…" : "Salvar"}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
       )}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="px-4 py-3 font-medium text-slate-700">Título</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Data</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Status</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tasks.length === 0 ? (
-              <tr><td colSpan={4} className="px-4 py-6 text-slate-500 text-center">Nenhuma tarefa cadastrada.</td></tr>
-            ) : (
-              tasks.map((r) => (
-                <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 py-3">{r.title ?? '(sem título)'}</td>
-                  <td className="px-4 py-3">{formatDate(r.scheduledDate)}</td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-700">
-                      {STATUS_LABEL[r.status] ?? r.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/tasks/${r.id}`)}
-                      className="flex items-center gap-1 text-sky-600 hover:underline text-sm"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Ver
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Box className="min-h-64">
+            <DataGrid
+              rows={tasks}
+              columns={taskColumns}
+              hideFooter={tasks.length <= 100}
+              pageSizeOptions={[10, 25, 50]}
+              disableColumnFilter
+              disableColumnSelector
+              disableDensitySelector
+              columnHeaderHeight={40}
+              disableRowSelectionOnClick
+              className="border-none"
+              getRowId={(row) => row.id}
+              slots={{
+                columnSortedDescendingIcon: () => <NiArrowDown size="small" />,
+                columnSortedAscendingIcon: () => <NiArrowUp size="small" />,
+                noRowsOverlay: () => (
+                  <Box className="flex h-full items-center justify-center">
+                    <Typography variant="body2" className="text-text-secondary">
+                      Nenhuma tarefa cadastrada.
+                    </Typography>
+                  </Box>
+                ),
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }
+
+const taskColumns: GridColDef<Task>[] = [
+  {
+      field: "title",
+      headerName: "Título",
+      flex: 1,
+      minWidth: 160,
+      renderCell: (params: GridRenderCellParams<Task, string>) => (
+        <Link
+          to={`/tasks/${params.row.id}`}
+          className="text-text-primary link-primary link-underline-none font-semibold transition-colors hover:text-primary"
+        >
+          {params.value ?? "(sem título)"}
+        </Link>
+      ),
+    },
+    {
+      field: "scheduledDate",
+      headerName: "Data",
+      type: "dateTime",
+      width: 120,
+      valueFormatter: (value) => (value ? dayjs(value).format("DD/MM/YYYY") : "—"),
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      minWidth: 140,
+      renderCell: (params: GridRenderCellParams<Task, string>) => {
+        const value = params.value;
+        const label = STATUS_LABEL[value ?? ""] ?? value;
+        if (value === "DONE") {
+          return (
+            <Button
+              className="pointer-events-none self-center"
+              size="small"
+              color="info"
+              variant="pastel"
+              startIcon={<NiCheckSquare size="small" />}
+            >
+              {label}
+            </Button>
+          );
+        }
+        if (value === "IN_REVIEW") {
+          return (
+            <Button
+              className="pointer-events-none self-center"
+              size="small"
+              color="warning"
+              variant="pastel"
+              startIcon={<NiExclamationSquare size="small" />}
+            >
+              {label}
+            </Button>
+          );
+        }
+        if (value === "REJECTED") {
+          return (
+            <Button
+              className="pointer-events-none self-center"
+              size="small"
+              color="error"
+              variant="pastel"
+              startIcon={<NiExclamationSquare size="small" />}
+            >
+              {label}
+            </Button>
+          );
+        }
+        return (
+          <Button
+            className="pointer-events-none self-center"
+            size="small"
+            color="success"
+            variant="pastel"
+            startIcon={<NiPlusSquare size="small" />}
+          >
+            {label}
+          </Button>
+        );
+      },
+    },
+    {
+      field: "id",
+      headerName: "Ações",
+      width: 100,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams<Task, string>) => (
+        <Button
+          component={Link}
+          to={`/tasks/${params.value}`}
+          size="small"
+          color="primary"
+          variant="text"
+          startIcon={<NiChevronRightSmall size="small" className="rtl:rotate-180" />}
+        >
+          Ver
+        </Button>
+      ),
+    },
+  ];

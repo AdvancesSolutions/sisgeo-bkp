@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(() => authStore.isAuthenticated());
 
-  // Só chama /auth/me quando existir token; evita tempestade de requests sem sessão.
+  // Só chama /auth/me quando existir token. 401 = token expirado/inválido (limpa storage e redireciona para login).
   useEffect(() => {
     if (!authStore.isAuthenticated() || !isVerifying) return;
     api
@@ -41,9 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authStore.setUser(data);
         setIsVerifying(false);
       })
-      .catch(() => {
-        authStore.clear();
-        setUser(null);
+      .catch((err) => {
+        // 401 é esperado quando o token expirou ou é inválido; limpa sem logar erro.
+        if (err?.response?.status === 401) {
+          authStore.clear();
+          setUser(null);
+        }
         setIsVerifying(false);
       });
   }, [isVerifying]);

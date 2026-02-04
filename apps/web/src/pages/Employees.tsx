@@ -1,9 +1,31 @@
-import { useState, useEffect } from 'react';
-import api from '@/lib/api';
-import { getApiErrorMessage } from '@/lib/getApiErrorMessage';
-import type { Employee, Location } from '@sigeo/shared';
+import { useState, useEffect } from "react";
 
-type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
+
+import NiArrowDown from "@/icons/nexture/ni-arrow-down";
+import NiArrowUp from "@/icons/nexture/ni-arrow-up";
+import NiChevronDownSmall from "@/icons/nexture/ni-chevron-down-small";
+import NiCross from "@/icons/nexture/ni-cross";
+import NiPlus from "@/icons/nexture/ni-plus";
+import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import type { Employee, Location } from "@sigeo/shared";
+
+type EmployeeStatus = "ACTIVE" | "INACTIVE" | "ON_LEAVE";
 type EmployeeFormState = {
   name: string;
   cpf: string;
@@ -13,11 +35,17 @@ type EmployeeFormState = {
 };
 
 const emptyForm: EmployeeFormState = {
-  name: '',
-  cpf: '',
-  role: '',
-  status: 'ACTIVE',
-  unitId: '',
+  name: "",
+  cpf: "",
+  role: "",
+  status: "ACTIVE",
+  unitId: "",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  ACTIVE: "Ativo",
+  INACTIVE: "Inativo",
+  ON_LEAVE: "Afastado",
 };
 
 export function Employees() {
@@ -35,8 +63,8 @@ export function Employees() {
     try {
       setError(null);
       const [empRes, locRes] = await Promise.all([
-        api.get<{ data: Employee[] }>('/employees'),
-        api.get<{ data: Location[] }>('/locations'),
+        api.get<{ data: Employee[] }>("/employees"),
+        api.get<{ data: Location[] }>("/locations"),
       ]);
       setEmployees(empRes.data.data ?? []);
       setLocations(locRes.data.data ?? []);
@@ -45,7 +73,7 @@ export function Employees() {
       }
     } catch (e: unknown) {
       setSuccess(null);
-      setError(getApiErrorMessage(e, 'Erro ao carregar funcionários'));
+      setError(getApiErrorMessage(e, "Erro ao carregar funcionários"));
     } finally {
       setLoading(false);
     }
@@ -58,7 +86,7 @@ export function Employees() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.role.trim() || !form.unitId) {
-      setError('Preencha Nome, Função e Unidade.');
+      setError("Preencha Nome, Função e Unidade.");
       return;
     }
     try {
@@ -74,17 +102,17 @@ export function Employees() {
       };
       if (editingId) {
         await api.patch(`/employees/${editingId}`, payload);
-        setSuccess('Funcionário atualizado.');
+        setSuccess("Funcionário atualizado.");
       } else {
-        await api.post('/employees', payload);
+        await api.post("/employees", payload);
         setForm((f) => ({ ...emptyForm, unitId: f.unitId }));
         setShowForm(false);
-        setSuccess('Funcionário cadastrado.');
+        setSuccess("Funcionário cadastrado.");
       }
       setEditingId(null);
       await load();
     } catch (e: unknown) {
-      setError(getApiErrorMessage(e, 'Erro ao salvar funcionário'));
+      setError(getApiErrorMessage(e, "Erro ao salvar funcionário"));
       setSuccess(null);
     } finally {
       setSaving(false);
@@ -95,7 +123,7 @@ export function Employees() {
     setEditingId(emp.id);
     setForm({
       name: emp.name,
-      cpf: emp.cpf ?? '',
+      cpf: emp.cpf ?? "",
       role: emp.role,
       status: emp.status as EmployeeStatus,
       unitId: emp.unitId,
@@ -109,197 +137,215 @@ export function Employees() {
     setShowForm(false);
   };
 
-  const statusLabel: Record<string, string> = {
-    ACTIVE: 'Ativo',
-    INACTIVE: 'Inativo',
-    ON_LEAVE: 'Afastado',
-  };
-
   const handleDelete = async (emp: Employee) => {
     if (!window.confirm(`Excluir o funcionário "${emp.name}"? Esta ação não pode ser desfeita.`)) return;
     try {
       setError(null);
       setSuccess(null);
       await api.delete(`/employees/${emp.id}`);
-      setSuccess('Funcionário excluído.');
+      setSuccess("Funcionário excluído.");
       await load();
     } catch (e: unknown) {
-      setError(getApiErrorMessage(e, 'Erro ao excluir funcionário'));
+      setError(getApiErrorMessage(e, "Erro ao excluir funcionário"));
       setSuccess(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-slate-500 text-sm font-medium">Carregando...</div>
-      </div>
+      <Box className="flex min-h-40 items-center justify-center">
+        <Typography variant="body2" className="text-text-secondary">
+          Carregando…
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Funcionários</h1>
-        <button
-          type="button"
+    <Box>
+      <Box className="mb-4 flex flex-row items-center justify-between">
+        <Typography variant="h6" component="h1" className="text-text-primary">
+          Funcionários
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          size="medium"
+          startIcon={<NiPlus size="medium" />}
           onClick={() => (editingId ? cancelEdit() : setShowForm(!showForm))}
-          className="inline-flex items-center justify-center rounded-theme-lg px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 transition"
         >
-          {showForm || editingId ? 'Cancelar' : 'Novo'}
-        </button>
-      </div>
+          {showForm || editingId ? "Cancelar" : "Novo"}
+        </Button>
+      </Box>
 
-      {/* Alerts */}
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <Alert severity="error" className="mb-4" onClose={() => setError(null)}>
           {error}
-        </div>
+        </Alert>
       )}
       {success && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <Alert severity="success" className="mb-4" onClose={() => setSuccess(null)}>
           {success}
-        </div>
+        </Alert>
       )}
 
-      {/* Form card */}
       {(showForm || editingId) && (
-        <div className="rounded-theme-2xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">
-            {editingId ? 'Editar funcionário' : 'Novo funcionário'}
-          </h2>
-          <form
-            action="#"
-            method="post"
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleSubmit(e);
-            }}
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
-            <input
-              placeholder="Nome"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-              required
-            />
-            <input
-              placeholder="CPF"
-              value={form.cpf}
-              onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-            />
-            <input
-              placeholder="Função"
-              value={form.role}
-              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-              required
-            />
-            <select
-              value={form.unitId}
-              onChange={(e) => setForm((f) => ({ ...f, unitId: e.target.value }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-              required
-            >
-              <option value="">Unidade</option>
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>{loc.name}</option>
-              ))}
-            </select>
-            <select
-              value={form.status}
-              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as EmployeeStatus }))}
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-800 focus:border-slate-500 focus:ring-2 focus:ring-slate-400/50 transition"
-            >
-              <option value="ACTIVE">Ativo</option>
-              <option value="INACTIVE">Inativo</option>
-              <option value="ON_LEAVE">Afastado</option>
-            </select>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => {
-                if (form.name.trim() && form.role.trim() && form.unitId) {
-                  handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-                } else {
-                  setError('Preencha Nome, Função e Unidade.');
-                }
-              }}
-              className="inline-flex items-center justify-center rounded-theme-lg px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 disabled:opacity-50 transition"
-            >
-              {saving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </form>
-        </div>
+        <Card className="mb-4">
+          <CardContent>
+            <Typography variant="subtitle1" className="mb-3 font-semibold text-text-primary">
+              {editingId ? "Editar funcionário" : "Novo funcionário"}
+            </Typography>
+            <Box component="form" onSubmit={handleSubmit} className="flex flex-wrap gap-4">
+              <TextField
+                label="Nome"
+                size="small"
+                required
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                className="min-w-48"
+              />
+              <TextField
+                label="CPF"
+                size="small"
+                value={form.cpf}
+                onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
+                className="min-w-40"
+              />
+              <TextField
+                label="Função"
+                size="small"
+                required
+                value={form.role}
+                onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                className="min-w-40"
+              />
+              <FormControl variant="outlined" size="small" required className="min-w-48">
+                <InputLabel>Unidade</InputLabel>
+                <Select
+                  value={form.unitId}
+                  onChange={(e) => setForm((f) => ({ ...f, unitId: e.target.value }))}
+                  label="Unidade"
+                  IconComponent={NiChevronDownSmall}
+                  MenuProps={{ className: "outlined" }}
+                >
+                  {locations.map((loc) => (
+                    <MenuItem key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl variant="outlined" size="small" className="min-w-40">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={form.status}
+                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as EmployeeStatus }))}
+                  label="Status"
+                  IconComponent={NiChevronDownSmall}
+                  MenuProps={{ className: "outlined" }}
+                >
+                  <MenuItem value="ACTIVE">Ativo</MenuItem>
+                  <MenuItem value="INACTIVE">Inativo</MenuItem>
+                  <MenuItem value="ON_LEAVE">Afastado</MenuItem>
+                </Select>
+              </FormControl>
+              <Button type="submit" variant="contained" color="primary" disabled={saving}>
+                {saving ? "Salvando…" : "Salvar"}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Table card */}
-      <div className="rounded-theme-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 bg-slate-100/80">
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Nome</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">CPF</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Função</th>
-              <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
-              <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-600 w-44">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                  Nenhum funcionário cadastrado.
-                </td>
-              </tr>
-            ) : (
-              employees.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50/80 transition"
-                >
-                  <td className="px-6 py-4 font-medium text-slate-800">{r.name}</td>
-                  <td className="px-6 py-4 text-slate-600">{r.cpf ?? '—'}</td>
-                  <td className="px-6 py-4 text-slate-600">{r.role}</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={
-                        r.status === 'ACTIVE'
-                          ? 'inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700'
-                          : 'text-slate-500'
-                      }
-                    >
-                      {statusLabel[r.status] ?? r.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(r)}
-                        className="inline-flex items-center justify-center rounded-theme px-3 py-2 text-sm font-medium bg-primary text-primary-foreground shadow-sm hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 transition"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(r)}
-                        className="inline-flex items-center justify-center rounded-lg border-2 border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 transition"
-                      >
-                        Deletar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <Card>
+        <CardContent className="p-0">
+          <Box className="min-h-64">
+            <DataGrid
+              rows={employees}
+              columns={employeeColumns(locations, startEdit, handleDelete)}
+              hideFooter={employees.length <= 100}
+              pageSizeOptions={[10, 25, 50]}
+              disableColumnFilter
+              disableColumnSelector
+              disableDensitySelector
+              columnHeaderHeight={40}
+              disableRowSelectionOnClick
+              className="border-none"
+              getRowId={(row) => row.id}
+              slots={{
+                columnSortedDescendingIcon: () => <NiArrowDown size="small" />,
+                columnSortedAscendingIcon: () => <NiArrowUp size="small" />,
+                noRowsOverlay: () => (
+                  <Box className="flex h-full items-center justify-center">
+                    <Typography variant="body2" className="text-text-secondary">
+                      Nenhum funcionário cadastrado.
+                    </Typography>
+                  </Box>
+                ),
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
+}
+
+function employeeColumns(
+  locations: Location[],
+  startEdit: (emp: Employee) => void,
+  handleDelete: (emp: Employee) => void,
+): GridColDef<Employee>[] {
+  return [
+    { field: "name", headerName: "Nome", flex: 1, minWidth: 140 },
+    { field: "cpf", headerName: "CPF", width: 120, valueGetter: (v) => v ?? "—" },
+    { field: "role", headerName: "Função", width: 140 },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 110,
+      renderCell: (params: GridRenderCellParams<Employee, string>) => (
+        <Button
+          className="pointer-events-none self-center"
+          size="small"
+          color={params.value === "ACTIVE" ? "success" : "grey"}
+          variant="pastel"
+        >
+          {STATUS_LABEL[params.value ?? ""] ?? params.value}
+        </Button>
+      ),
+    },
+    {
+      field: "unitId",
+      headerName: "Unidade",
+      width: 140,
+      valueGetter: (_, row) => locations.find((l) => l.id === row.unitId)?.name ?? row.unitId,
+    },
+    {
+      field: "id",
+      headerName: "Ações",
+      width: 180,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams<Employee, string>) => {
+        const emp = params.row;
+        return (
+          <Box className="flex gap-2">
+            <Button size="small" variant="contained" color="primary" onClick={() => startEdit(emp)}>
+              Editar
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              startIcon={<NiCross size="small" />}
+              onClick={() => handleDelete(emp)}
+            >
+              Deletar
+            </Button>
+          </Box>
+        );
+      },
+    },
+  ];
 }

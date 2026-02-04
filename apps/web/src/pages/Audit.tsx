@@ -1,36 +1,55 @@
-const mock = [
-  { id: '1', userId: 'u1', action: 'CREATE', entity: 'Employee', entityId: 'e1', createdAt: '2025-01-27 10:00' },
-  { id: '2', userId: 'u1', action: 'UPDATE', entity: 'Task', entityId: 't1', createdAt: '2025-01-27 09:30' },
+import { Box, Card, CardContent, Typography } from "@mui/material";
+import { type GridColDef } from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
+
+import { dataGridLocalePtBR } from "@/lib/data-grid-locale";
+import NiArrowDown from "@/icons/nexture/ni-arrow-down";
+import NiArrowUp from "@/icons/nexture/ni-arrow-up";
+
+const MOCK_ROWS = [
+  { id: "1", userId: "u1", action: "CREATE", entity: "Employee", entityId: "e1", createdAt: "2025-01-27 10:00" },
+  { id: "2", userId: "u1", action: "UPDATE", entity: "Task", entityId: "t1", createdAt: "2025-01-27 09:30" },
+];
+
+type AuditRow = (typeof MOCK_ROWS)[number];
+
+const auditColumns: GridColDef<AuditRow>[] = [
+  { field: "createdAt", headerName: "Data", width: 160 },
+  { field: "userId", headerName: "Usuário", width: 100 },
+  { field: "action", headerName: "Ação", width: 100 },
+  { field: "entity", headerName: "Entidade", width: 120 },
+  { field: "entityId", headerName: "ID", width: 100 },
 ];
 
 export function Audit() {
   return (
-    <div>
-      <h1 className="text-xl font-bold text-slate-800 mb-4">Auditoria de ações</h1>
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="px-4 py-3 font-medium text-slate-700">Data</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Usuário</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Ação</th>
-              <th className="px-4 py-3 font-medium text-slate-700">Entidade</th>
-              <th className="px-4 py-3 font-medium text-slate-700">ID</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mock.map((r) => (
-              <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className="px-4 py-3">{r.createdAt}</td>
-                <td className="px-4 py-3">{r.userId}</td>
-                <td className="px-4 py-3">{r.action}</td>
-                <td className="px-4 py-3">{r.entity}</td>
-                <td className="px-4 py-3">{r.entityId}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <Box>
+      <Typography variant="h6" component="h1" className="mb-4 text-text-primary">
+        Auditoria de ações
+      </Typography>
+      <Card>
+        <CardContent className="p-0">
+          <Box className="min-h-48">
+            <DataGrid
+              rows={MOCK_ROWS}
+              columns={auditColumns}
+              localeText={dataGridLocalePtBR}
+              hideFooter
+              disableColumnFilter
+              disableColumnSelector
+              disableDensitySelector
+              columnHeaderHeight={40}
+              disableRowSelectionOnClick
+              className="border-none"
+              getRowId={(row) => row.id}
+              slots={{
+                columnSortedDescendingIcon: () => <NiArrowDown size="small" />,
+                columnSortedAscendingIcon: () => <NiArrowUp size="small" />,
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

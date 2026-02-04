@@ -1,37 +1,54 @@
-import { BarChart3, FileText, Clock, CheckSquare } from 'lucide-react';
+import { Box, Card, CardContent, Typography } from "@mui/material";
+
+import NiChartBar from "@/icons/nexture/ni-chart-bar";
+import NiChartPie from "@/icons/nexture/ni-chart-pie";
+import NiClock from "@/icons/nexture/ni-clock";
+import NiDocumentFull from "@/icons/nexture/ni-document-full";
+import NiCheckSquare from "@/icons/nexture/ni-check-square";
+
+const REPORT_ITEMS = [
+  { id: "prod", label: "Produtividade", desc: "Tarefas por período", icon: NiChartBar },
+  { id: "ponto", label: "Ponto", desc: "Horas por funcionário", icon: NiClock },
+  { id: "valid", label: "Validações", desc: "Aprovados vs recusados", icon: NiCheckSquare },
+  { id: "pdf", label: "Exportar PDF", desc: "Relatórios em PDF", icon: NiDocumentFull },
+];
 
 export function Reports() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-bold text-slate-800">Relatórios</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Produtividade', icon: BarChart3, desc: 'Tarefas por período' },
-          { label: 'Ponto', icon: Clock, desc: 'Horas por funcionário' },
-          { label: 'Validações', icon: CheckSquare, desc: 'Aprovados vs recusados' },
-          { label: 'Exportar PDF', icon: FileText, desc: 'Relatórios em PDF' },
-        ].map(({ label, icon: Icon, desc }) => (
-          <div
-            key={label}
-            className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm hover:border-slate-300 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-slate-100">
-                <Icon className="w-5 h-5 text-slate-600" />
-              </div>
-              <div>
-                <p className="font-medium text-slate-800">{label}</p>
-                <p className="text-sm text-slate-500">{desc}</p>
-              </div>
-            </div>
-          </div>
+    <Box>
+      <Typography variant="h6" component="h1" className="mb-4 text-text-primary">
+        Relatórios
+      </Typography>
+      <Box className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {REPORT_ITEMS.map(({ id, label, desc, icon: Icon }) => (
+          <Card key={id} className="transition-colors hover:border-grey-300">
+            <CardContent className="flex flex-row items-center gap-3">
+              <Box className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-grey-100 text-text-secondary">
+                <Icon size="medium" />
+              </Box>
+              <Box>
+                <Typography variant="subtitle1" className="font-medium text-text-primary">
+                  {label}
+                </Typography>
+                <Typography variant="body2" className="text-text-secondary">
+                  {desc}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
         ))}
-      </div>
-      <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500">
-        <BarChart3 className="w-12 h-12 mx-auto mb-2 text-slate-300" />
-        <p>Relatórios detalhados em desenvolvimento.</p>
-        <p className="text-sm mt-1">KPIs e exportação PDF em próxima versão.</p>
-      </div>
-    </div>
+      </Box>
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <NiChartPie size="large" className="mb-2 text-text-disabled" />
+          <Typography variant="body1" className="text-text-secondary">
+            Relatórios detalhados em desenvolvimento.
+          </Typography>
+          <Typography variant="body2" className="mt-1 text-text-secondary">
+            KPIs e exportação PDF em próxima versão.
+          </Typography>
+        </CardContent>
+      </Card>
+    </Box>
   );
 }
