@@ -7,6 +7,15 @@ export class HealthController {
     return { status: 'ok' };
   }
 
+  /** Endpoint para verificar versão em produção (inclui employee-access). */
+  @Get('version')
+  version() {
+    return {
+      build: process.env.BUILD_DATE ?? 'dev',
+      hasEmployeeAccess: true,
+    };
+  }
+
   /**
    * Política de atualização OTA do app mobile.
    * Retorna minRuntimeVersion, forceUpdate e message para update crítico.

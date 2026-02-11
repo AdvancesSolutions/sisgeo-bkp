@@ -31,7 +31,7 @@ jobs:
 
       - name: Build API image
         run: |
-          docker build -f apps/api/Dockerfile -t ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest ./
+          docker build -f apps/api/Dockerfile --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%MZ) -t ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest ./
 
       - name: Push to ECR
         run: |
@@ -39,4 +39,4 @@ jobs:
 
       - name: Deploy to ECS (force new deployment)
         run: |
-          aws ecs update-service --cluster sigeo-cluster --service sigeo-api --force-new-deployment --region ${{ env.AWS_REGION }}
+          aws ecs update-service --cluster sigeo-cluster --service sigeo-api --force-new-deployment --region ${{ secrets.AWS_REGION || env.AWS_REGION }}

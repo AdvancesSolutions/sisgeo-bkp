@@ -17,7 +17,9 @@ RUN pnpm --filter @sigeo/shared build
 RUN pnpm --filter @sigeo/api build
 
 FROM base AS runner
+ARG BUILD_DATE=dev
 ENV NODE_ENV=production
+ENV BUILD_DATE=${BUILD_DATE}
 COPY --from=builder /app/package.json /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/shared ./packages/shared
