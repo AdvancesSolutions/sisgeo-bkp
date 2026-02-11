@@ -14,7 +14,7 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ name: 'employee_id', nullable: true })
+  @Column({ name: 'employee_id', type: 'uuid', nullable: true })
   employeeId: string | null;
 
   @Column({ unique: true })
