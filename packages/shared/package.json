@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "build": "node ../../node_modules/tsup/dist/cli-default.js src/index.ts --format cjs,esm --dts --clean",
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "lint": "eslint src --ext .ts"
   },

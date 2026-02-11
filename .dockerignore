@@ -13,3 +13,6 @@ coverage
 uploads
 .amplify
 .DS_Store
+tema
+apps/mobile
+apps/web
