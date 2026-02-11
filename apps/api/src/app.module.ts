@@ -17,6 +17,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { HealthModule } from './modules/health/health.module';
 import { EmployeeAccessModule } from './modules/employee-access/employee-access.module';
 
+/** API SIGEO - EmployeeAccessModule em produção */
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
