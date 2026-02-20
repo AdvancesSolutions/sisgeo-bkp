@@ -2,6 +2,7 @@ export * from './auth';
 export * from './employee';
 export * from './location';
 export * from './area';
+export * from './cleaning-type';
 export * from './task';
 export * from './material';
 export * from './timeclock';

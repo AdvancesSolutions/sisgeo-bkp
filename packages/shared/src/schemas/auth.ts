@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-export const roleEnum = z.enum(['ADMIN', 'FUNCIONARIO']);
+/** Perfis: Auxiliar (execução), Supervisor (validação), Administrador (gestão completa) */
+export const roleEnum = z.enum(['ADMIN', 'SUPERVISOR', 'AUXILIAR', 'FUNCIONARIO']);
 export type Role = z.infer<typeof roleEnum>;
 
 export const loginSchema = z.object({

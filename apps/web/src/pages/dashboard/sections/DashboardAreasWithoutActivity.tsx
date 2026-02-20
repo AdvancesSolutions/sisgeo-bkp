@@ -18,7 +18,7 @@ export default function DashboardAreasWithoutActivity({ startDate, endDate }: Pr
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.role !== "ADMIN") {
+    if (user?.role !== "ADMIN" && user?.role !== "SUPERVISOR") {
       setLoading(false);
       return;
     }
@@ -46,7 +46,7 @@ export default function DashboardAreasWithoutActivity({ startDate, endDate }: Pr
     };
   }, [user?.role, startDate, endDate]);
 
-  if (user?.role !== "ADMIN") return null;
+  if (user?.role !== "ADMIN" && user?.role !== "SUPERVISOR") return null;
 
   return (
     <>

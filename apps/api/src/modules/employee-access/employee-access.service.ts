@@ -90,7 +90,7 @@ export class EmployeeAccessService {
       id: uuid(),
       name: employee.name,
       email: data.email.trim().toLowerCase(),
-      role: 'FUNCIONARIO',
+      role: 'AUXILIAR',
       passwordHash,
       employeeId: employee.id,
     });

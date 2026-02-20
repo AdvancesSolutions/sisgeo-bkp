@@ -137,7 +137,7 @@ export function TaskDetail() {
 
   const photosBefore = task.photos?.filter((p) => p.type === "BEFORE") ?? [];
   const photosAfter = task.photos?.filter((p) => p.type === "AFTER") ?? [];
-  const canValidate = user?.role === "ADMIN" && task.status === "IN_REVIEW";
+  const canValidate = (user?.role === "ADMIN" || user?.role === "SUPERVISOR") && task.status === "IN_REVIEW";
   let baseUrl = import.meta.env.VITE_API_URL || "";
   if (typeof window !== "undefined" && window.location?.protocol === "https:" && baseUrl.startsWith("http://")) {
     baseUrl = baseUrl.replace(/^http:\/\//i, "https://");

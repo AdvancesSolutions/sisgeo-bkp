@@ -4,13 +4,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { Box, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { useLayoutContext } from "@/components/layout/layout-context";
 import { PrimaryItem } from "@/components/layout/menu/primary-item";
 import { SecondaryItem } from "@/components/layout/menu/secondary-item";
 import { DEFAULTS } from "@/config";
 import IllustrationLaunch from "@/icons/illustrations/illustration-launch";
 import NiChevronLeft from "@/icons/nexture/ni-chevron-left";
-import { cn, isPathMatch } from "@/lib/utils";
+import { cn, filterMenuByRole, isPathMatch } from "@/lib/utils";
 import { leftMenuBottomItems, leftMenuItems } from "@/menu-items";
 import { MenuShowState, MenuType } from "@/types/types";
 import type { MenuItem } from "@/types/types";
@@ -21,6 +22,15 @@ export default function LeftMenu() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const filteredMenuItems = useMemo(
+    () => filterMenuByRole(leftMenuItems, user?.role ?? "", undefined),
+    [user?.role],
+  );
+  const filteredMenuBottomItems = useMemo(
+    () => filterMenuByRole(leftMenuBottomItems, user?.role ?? "", undefined),
+    [user?.role],
+  );
   const {
     leftMenuType,
     leftMenuWidth,
@@ -67,9 +77,19 @@ export default function LeftMenu() {
   }, [activeItem, pathname, setMenuSelectedSecondaryItem]);
 
   useEffect(() => {
-    let selectedMenu = leftMenuItems.find((item) => item.href && isPathMatch(pathname, item.href));
-    if (!selectedMenu && leftMenuBottomItems) {
-      selectedMenu = leftMenuBottomItems.find((item) => item.href && isPathMatch(pathname, item.href));
+    const findParentForPath = (items: MenuItem[]): MenuItem | undefined => {
+      for (const item of items) {
+        if (item.href && isPathMatch(pathname, item.href)) return item;
+        if (item.children?.length) {
+          const inChild = item.children.some((c) => c.href && isPathMatch(pathname, c.href));
+          if (inChild) return item;
+        }
+      }
+      return undefined;
+    };
+    let selectedMenu = findParentForPath(filteredMenuItems);
+    if (!selectedMenu && filteredMenuBottomItems.length) {
+      selectedMenu = filteredMenuBottomItems.find((item) => item.href && isPathMatch(pathname, item.href));
     }
     selectedPrimary.current = selectedMenu;
     setActiveItem(selectedMenu);
@@ -78,7 +98,7 @@ export default function LeftMenu() {
     }
     resetLeftMenu();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [pathname, filteredMenuItems, filteredMenuBottomItems]);
 
   useEffect(() => {
     if (selectedPrimary.current?.id !== activeItem?.id && !leftShowBackdrop) {
@@ -204,7 +224,7 @@ export default function LeftMenu() {
               <Box
                 className={cn("flex w-full flex-1 flex-col gap-0.5", leftMenuType === MenuType.SingleLayer && "gap-1")}
               >
-                {leftMenuItems
+                {filteredMenuItems
                   .filter((x) => !x.hideInMenu)
                   .map((item) =>
                     leftMenuType === MenuType.SingleLayer ? (
@@ -236,7 +256,7 @@ export default function LeftMenu() {
                   )}
               </Box>
               <Box className={cn("mb-5 flex w-full flex-col gap-0.5")}>
-                {leftMenuBottomItems
+                {filteredMenuBottomItems
                   .filter((x) => !x.hideInMenu)
                   .map((item) =>
                     leftMenuType === MenuType.SingleLayer ? (

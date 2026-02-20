@@ -36,11 +36,13 @@ export interface Area {
   id: string;
   locationId: string;
   name: string;
+  riskClassification?: string | null;
+  cleaningFrequency?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'REJECTED';
+export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'LATE' | 'REJECTED';
 
 export interface Task {
   id: string;

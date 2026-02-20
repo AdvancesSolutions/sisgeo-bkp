@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-export const taskStatusEnum = z.enum(['PENDING', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'REJECTED']);
+/** Pendente, Em execução, Concluída, Atrasada, Reprovada + IN_REVIEW (validação) */
+export const taskStatusEnum = z.enum(['PENDING', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'LATE', 'REJECTED']);
 
 const timeRegex = /^([01]?\d|2[0-3]):[0-5]\d$/;
 

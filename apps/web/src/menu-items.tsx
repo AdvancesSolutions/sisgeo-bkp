@@ -15,11 +15,11 @@ export const leftMenuItems: MenuItem[] = [
     label: "Administração",
     href: "/employees",
     description: "Funcionários, locais e áreas",
-    canAccess: [Viewer.ADMIN],
+    canAccess: [Viewer.ADMIN, Viewer.SUPERVISOR],
     children: [
       { id: "painel-controle", label: "Painel de Controle", href: "/painel-controle", icon: "NiChartBar" },
       { id: "employees", label: "Funcionários", href: "/employees", icon: "NiUsers" },
-      { id: "employee-access", label: "Acessos dos Funcionários", href: "/employee-access", icon: "NiKey" },
+      { id: "employee-access", label: "Acessos dos Funcionários", href: "/employee-access", icon: "NiKey", canAccess: [Viewer.ADMIN] },
       { id: "locations", label: "Locais", href: "/locations", icon: "NiSigns" },
       { id: "areas", label: "Áreas", href: "/areas", icon: "NiCells" },
       { id: "validation", label: "Validação", href: "/validation", icon: "NiCheckSquare" },

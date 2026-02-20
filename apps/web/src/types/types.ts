@@ -15,6 +15,7 @@ export const Viewer = {
   VIEWER: "VIEWER",
   MODERATOR: "MODERATOR",
   ADMIN: "ADMIN",
+  SUPERVISOR: "SUPERVISOR",
 } as const;
 export type Viewer = (typeof Viewer)[keyof typeof Viewer];
 

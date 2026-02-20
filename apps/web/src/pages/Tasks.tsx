@@ -137,7 +137,7 @@ export function Tasks() {
         <Typography variant="h6" component="h1" className="text-text-primary">
           Tarefas / Serviços
         </Typography>
-        {user?.role === "ADMIN" && (
+        {(user?.role === "ADMIN" || user?.role === "SUPERVISOR") && (
           <Button
             variant="contained"
             color="primary"

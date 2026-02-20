@@ -28,7 +28,7 @@ export class TasksController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Criar tarefa' })
   create(@Body() body: unknown) {
     return this.service.create(taskSchema.parse(body) as TaskInput);
@@ -51,7 +51,7 @@ export class TasksController {
 
   @Get('validation/queue')
   @UseGuards(RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Fila de validação (IN_REVIEW)' })
   findValidationQueue() {
     return this.service.findValidationQueue();
@@ -65,7 +65,7 @@ export class TasksController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Atualizar tarefa' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -77,7 +77,7 @@ export class TasksController {
 
   @Post(':id/approve')
   @UseGuards(RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Aprovar tarefa (DONE)' })
   approve(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('sub') userId: string) {
     return this.service.approve(id, userId);
@@ -85,7 +85,7 @@ export class TasksController {
 
   @Post(':id/reject')
   @UseGuards(RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Recusar tarefa (volta IN_PROGRESS)' })
   reject(
     @Param('id', ParseUUIDPipe) id: string,
@@ -97,7 +97,7 @@ export class TasksController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Remover tarefa' })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('sub') userId?: string) {
     await this.service.remove(id, userId);

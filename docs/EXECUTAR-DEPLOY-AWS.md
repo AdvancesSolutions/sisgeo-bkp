@@ -2,14 +2,29 @@
 
 ## Migração: employee_id em users (Acessos dos Funcionários)
 
-Após deploy da API, execute no banco de produção:
+**Opção 1 – Script Node (recomendado):**
 
+Crie `apps/api/.env.production` com os dados do RDS:
+```
+DB_HOST=seu-rds-endpoint.region.rds.amazonaws.com
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=sua_senha
+DB_NAME=sigeo
+```
+
+Depois execute:
+```powershell
+cd d:\SERVIDOR\SISGEO
+$env:NODE_ENV="production"
+pnpm --filter @sigeo/api run db:migrate:employee-id
+```
+
+**Opção 2 – SQL direto no RDS Query Editor:**
 ```sql
 ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_id uuid NULL;
 CREATE INDEX IF NOT EXISTS idx_users_employee_id ON users(employee_id);
 ```
-
-Ou via psql: `psql -h <RDS_HOST> -U postgres -d sigeo -f apps/api/src/db/migrations/add-user-employee-id.sql`
 
 ---
 

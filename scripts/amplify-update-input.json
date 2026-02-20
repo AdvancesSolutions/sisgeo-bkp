@@ -1,5 +1,5 @@
 {
-  "appId": "d4eu378gsc65t",
+  "appId": "da1hucc7ed5a9",
   "customRules": [
     {
       "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|jpeg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>",

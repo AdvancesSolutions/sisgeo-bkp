@@ -30,7 +30,13 @@ import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import type { Area, Location } from "@sigeo/shared";
 
-const emptyForm = { locationId: "", name: "" };
+const RISK_OPTIONS = [
+  { value: "CRITICO", label: "Crítico" },
+  { value: "SEMICRITICO", label: "Semicrítico" },
+  { value: "NAO_CRITICO", label: "Não crítico" },
+] as const;
+
+const emptyForm = { locationId: "", name: "", riskClassification: "" as string, cleaningFrequency: "" };
 
 export function Areas() {
   const [showForm, setShowForm] = useState(false);
@@ -41,7 +47,12 @@ export function Areas() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [form, setForm] = useState<{ locationId: string; name: string }>(emptyForm);
+  const [form, setForm] = useState<{
+    locationId: string;
+    name: string;
+    riskClassification: string;
+    cleaningFrequency: string;
+  }>(emptyForm);
 
   const load = async () => {
     try {
@@ -81,13 +92,18 @@ export function Areas() {
       setSaving(true);
       setError(null);
       setSuccess(null);
+      const payload = {
+        name: form.name.trim(),
+        riskClassification: form.riskClassification || null,
+        cleaningFrequency: form.cleaningFrequency.trim() || null,
+      };
       if (editingId) {
-        await api.patch(`/areas/${editingId}`, { name: form.name.trim() });
+        await api.patch(`/areas/${editingId}`, payload);
         setSuccess("Área atualizada.");
       } else {
         await api.post("/areas", {
           locationId: form.locationId,
-          name: form.name.trim(),
+          ...payload,
         });
         setSuccess("Área cadastrada.");
       }
@@ -103,7 +119,12 @@ export function Areas() {
 
   const startEdit = (area: Area) => {
     setEditingId(area.id);
-    setForm({ locationId: area.locationId, name: area.name });
+    setForm({
+      locationId: area.locationId,
+      name: area.name,
+      riskClassification: area.riskClassification ?? "",
+      cleaningFrequency: area.cleaningFrequency ?? "",
+    });
     setShowForm(true);
   };
 
@@ -213,6 +234,31 @@ export function Areas() {
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
+            <FormControl variant="outlined" size="small" fullWidth>
+              <InputLabel>Classificação de risco</InputLabel>
+              <Select
+                value={form.riskClassification}
+                onChange={(e) => setForm((f) => ({ ...f, riskClassification: e.target.value }))}
+                label="Classificação de risco"
+                IconComponent={NiChevronDownSmall}
+                MenuProps={{ className: "outlined" }}
+              >
+                <MenuItem value="">Nenhuma</MenuItem>
+                {RISK_OPTIONS.map((o) => (
+                  <MenuItem key={o.value} value={o.value}>
+                    {o.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Frequência de limpeza"
+              size="small"
+              fullWidth
+              placeholder="Ex: diária, 2x/dia, semanal"
+              value={form.cleaningFrequency}
+              onChange={(e) => setForm((f) => ({ ...f, cleaningFrequency: e.target.value }))}
+            />
           </DialogContent>
           <DialogActions className="gap-2 px-6 pb-4">
             <Button variant="outlined" onClick={closeModal}>
@@ -267,6 +313,21 @@ function areaColumns(
 ): GridColDef<Area>[] {
   return [
     { field: "name", headerName: "Nome", flex: 1, minWidth: 160 },
+    {
+      field: "riskClassification",
+      headerName: "Risco",
+      width: 120,
+      valueGetter: (_, row) => {
+        const v = row.riskClassification;
+        return v ? RISK_OPTIONS.find((o) => o.value === v)?.label ?? v : "—";
+      },
+    },
+    {
+      field: "cleaningFrequency",
+      headerName: "Frequência",
+      width: 140,
+      valueGetter: (_, row) => row.cleaningFrequency ?? "—",
+    },
     {
       field: "locationId",
       headerName: "Local",
