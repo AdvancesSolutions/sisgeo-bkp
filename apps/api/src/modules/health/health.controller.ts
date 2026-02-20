@@ -1,17 +1,17 @@
 import { Controller, Get } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
-@Controller()
+@Controller('health')
 export class HealthController {
   constructor(private readonly ds: DataSource) {}
 
-  @Get('health')
+  @Get()
   check() {
     return { status: 'ok' };
   }
 
   /** Verifica conectividade com o banco (útil para diagnosticar 500). */
-  @Get('health/db')
+  @Get('db')
   async checkDb() {
     try {
       await this.ds.query('SELECT 1');
