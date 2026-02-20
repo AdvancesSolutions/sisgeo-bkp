@@ -5,24 +5,18 @@ import { DataSource } from 'typeorm';
 export class HealthController {
   constructor(private readonly ds: DataSource) {}
 
+  /** Health + verificação de banco (útil para diagnosticar 500 em /tasks). */
   @Get()
-  check() {
-    return { status: 'ok' };
-  }
-
-  /** Verifica conectividade com o banco (útil para diagnosticar 500). */
-  @Get('db')
-  async checkDb() {
+  async check() {
+    let db: 'ok' | 'error' = 'ok';
+    let dbMessage: string | undefined;
     try {
       await this.ds.query('SELECT 1');
-      return { db: 'ok' };
     } catch (e) {
-      const err = e as Error;
-      return {
-        db: 'error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Database connection failed',
-      };
+      db = 'error';
+      dbMessage = process.env.NODE_ENV === 'development' ? (e as Error).message : 'Database connection failed';
     }
+    return { status: 'ok', db, ...(dbMessage && { dbMessage }) };
   }
 
   /** Endpoint para verificar versão em produção (inclui employee-access). */
