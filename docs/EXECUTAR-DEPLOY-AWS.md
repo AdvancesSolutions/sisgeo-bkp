@@ -18,7 +18,7 @@ Se o banco estiver vazio, rode antes o bootstrap:
 pnpm --filter @sigeo/api run db:bootstrap
 ```
 
-Para diagnosticar: acesse `https://sua-api/health/db` – se retornar `{ db: "error" }`, o problema é conexão ou schema.
+Para diagnosticar: acesse `GET /health` – se retornar `{ status: "ok", db: "error" }`, o problema é conexão ou schema.
 
 ---
 
