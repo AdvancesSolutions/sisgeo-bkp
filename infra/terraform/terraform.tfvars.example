@@ -1,0 +1,31 @@
+# Copie para terraform.tfvars e preencha os valores sensíveis
+
+project_name   = "sigeo"
+environment    = "prod"
+aws_region     = "sa-east-1"
+
+# RDS
+db_instance_class    = "db.t3.micro"
+db_allocated_storage = 20
+db_name              = "sigeo"
+db_username          = "postgres"
+db_password          = "ALTERE_SUA_SENHA_SEGURA"
+
+# S3 - use "sistema-limpeza-evidencias" para nome exato (deve ser único globalmente)
+s3_bucket_name = ""
+
+# ECS
+ecs_cpu    = 256
+ecs_memory = 512
+
+# HTTPS (opcional)
+enable_https = false
+domain_name  = ""
+
+# SSM - criar parâmetros ou usar existentes
+create_ssm_parameters = true
+jwt_secret            = "gere-um-secret-64-chars"
+jwt_refresh_secret    = "gere-outro-secret-64-chars"
+
+# CORS
+cors_origin = "https://sigeo.advances.com.br,https://main.da1hucc7ed5a9.amplifyapp.com"

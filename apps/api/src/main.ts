@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import helmet from 'helmet';
@@ -11,6 +12,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useWebSocketAdapter(new IoAdapter(app));
   const config = app.get(ConfigService);
 
   app.use((req: Request & { requestId?: string }, _res: unknown, next: () => void) => {

@@ -1,0 +1,13 @@
+# Override para instâncias EC2 com GPU (G4ad, G5).
+# Uso: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+name: sigeo
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

@@ -1,0 +1,115 @@
+#!/bin/bash
+
+# SISGEO - AWS Deployment Summary
+# Complete infrastructure for production environment
+
+echo "========================================="
+echo "SISGEO - AWS Deployment Configuration"
+echo "========================================="
+echo ""
+
+AWS_ACCOUNT="320674390105"
+AWS_REGION="sa-east-1"
+API_IMAGE="320674390105.dkr.ecr.sa-east-1.amazonaws.com/sigeo-api:latest"
+API_PRIVATE_IP="56.125.14.85"
+API_PORT="3001"
+
+# ========== INFRASTRUCTURE DEPLOYED ==========
+
+echo "✅ INFRASTRUCTURE DEPLOYED:"
+echo ""
+echo "1. DOCKER IMAGE"
+echo "   📦 Repository: sigeo-api (ECR)"
+echo "   🏷️  Tag: latest"
+echo "   📍 URI: $API_IMAGE"
+echo "   ✓ Status: Pushed to ECR"
+echo ""
+
+echo "2. COMPUTE LAYER (AWS ECS Fargate)"
+echo "   🖥️  Service: sigeo-api-service"
+echo "   📦 Cluster: sisgeo-cluster"
+echo "   🏗️  Type: Fargate (serverless containers)"
+echo "   💾 CPU: 512 mCPU"
+echo "   🧠 Memory: 1024 MB"
+echo "   🌐 Port: $API_PORT"
+echo "   📍 Private IP: $API_PRIVATE_IP"
+echo "   ✓ Status: ACTIVE"
+echo ""
+
+echo "3. NETWORK LAYER"
+echo "   🔗 VPC: vpc-0026058ffeba7cfbd"
+echo "   📌 Subnet 1: subnet-0adbc96487abb57ab"
+echo "   📌 Subnet 2: subnet-03321a4c678da21e0"
+echo "   🔐 Security Group: sg-xxxxx (port 3001 open)"
+echo ""
+
+echo "4. LOGGING & MONITORING"
+echo "   📋 CloudWatch Logs: /ecs/sigeo-api"
+echo "   ⏰ Retention: 7 days"
+echo "   View logs: aws logs tail /ecs/sigeo-api --follow"
+echo ""
+
+echo "========================================="
+echo "NEXT STEPS - FRONTEND & LOAD BALANCING"
+echo "========================================="
+echo ""
+
+echo "OPTION 1: Quick Public API Access"
+echo "  → API accessible at: http://$API_PRIVATE_IP:$API_PORT"
+echo ""
+echo "  Test connection:"
+echo "  curl http://$API_PRIVATE_IP:$API_PORT/health"
+echo ""
+
+echo "OPTION 2: Add Application Load Balancer (Recommended)"
+echo "  → Creates public DNS endpoint for API"
+echo "  → Enables auto-scaling and SSL/TLS"
+echo ""
+echo "  Deploy ALB:"
+echo "  aws elbv2 create-load-balancer \\"
+echo "    --name sisgeo-api-lb \\"
+echo "    --subnets subnet-0adbc96487abb57ab subnet-03321a4c678da21e0 \\"
+echo "    --region $AWS_REGION"
+echo ""
+
+echo "OPTION 3: Deploy Frontend to S3 + CloudFront"
+echo "  → Hosts React app in S3"
+echo "  → Serves via CloudFront CDN"
+echo "  → Automatic HTTPS"
+echo ""
+echo "  Deploy:"
+echo "  powershell -ExecutionPolicy Bypass -File scripts/deploy-amplify.ps1"
+echo ""
+
+echo "========================================="
+echo "MONITORING & MANAGEMENT"
+echo "========================================="
+echo ""
+echo "Check service status:"
+echo "aws ecs describe-services --cluster sisgeo-cluster \\"
+echo "  --services sigeo-api-service --region $AWS_REGION"
+echo ""
+
+echo "View running tasks:"
+echo "aws ecs list-tasks --cluster sisgeo-cluster --region $AWS_REGION"
+echo ""
+
+echo "Stream logs:"
+echo "aws logs tail /ecs/sigeo-api --follow --region $AWS_REGION"
+echo ""
+
+echo "========================================="
+echo "CREDENTIALS FOR TESTING"
+echo "========================================="
+echo ""
+echo "Super Admin:"
+echo "  Email: admin@empresa.com"
+echo "  Password: admin123"
+echo ""
+
+echo "Gestor:"
+echo "  Email: joao.ti@empresa.com"
+echo "  Password: gestor123"
+echo ""
+
+echo "========================================="

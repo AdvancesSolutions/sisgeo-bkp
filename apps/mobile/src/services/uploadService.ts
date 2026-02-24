@@ -15,6 +15,7 @@ export interface PhotoUploadMetadata {
 export interface PhotoUploadResult {
   url: string;
   key: string;
+  photoId?: string;
 }
 
 /**

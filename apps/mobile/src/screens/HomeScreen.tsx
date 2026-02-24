@@ -6,6 +6,7 @@ import { useTimeClockHistory, useCheckIn, useCheckOut } from '../features/timecl
 import { useTasksList } from '../features/tasks/useTasks';
 import { useOfflinePendingCount, useFlushOfflineQueue } from '../features/offline/useOfflineQueue';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { RefreshCw, LogIn, LogOut } from 'lucide-react-native';
 import { getApiErrorMessage } from '../utils/getApiErrorMessage';
 import type { Task } from '@sigeo/shared';
@@ -70,16 +71,33 @@ export function HomeScreen() {
   const todayTasks = myTasks.filter((t) => new Date(t.scheduledDate).toDateString() === today);
 
   const requestLocationAndCheckIn = async () => {
+    if (!employeeId) {
+      Alert.alert('Aviso', 'Nenhum funcionário vinculado.');
+      return;
+    }
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
+      if (locStatus !== 'granted') {
         Alert.alert('GPS necessário', 'Permita o acesso à localização para registrar o ponto.');
         return;
       }
+      const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      if (camStatus !== 'granted') {
+        Alert.alert('Câmera necessária', 'Permita o acesso à câmera para registrar a foto do ponto.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets[0]?.uri) return;
       const loc = await Location.getCurrentPositionAsync({});
       await checkIn.mutateAsync({
+        employeeId,
         lat: loc.coords.latitude,
         lng: loc.coords.longitude,
+        photoUri: result.assets[0].uri,
       });
       Alert.alert('Sucesso', 'Check-in registrado.');
     } catch (e: unknown) {
@@ -88,16 +106,33 @@ export function HomeScreen() {
   };
 
   const requestLocationAndCheckOut = async () => {
+    if (!employeeId) {
+      Alert.alert('Aviso', 'Nenhum funcionário vinculado.');
+      return;
+    }
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
+      if (locStatus !== 'granted') {
         Alert.alert('GPS necessário', 'Permita o acesso à localização para registrar o ponto.');
         return;
       }
+      const { status: camStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      if (camStatus !== 'granted') {
+        Alert.alert('Câmera necessária', 'Permita o acesso à câmera para registrar a foto do ponto.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets[0]?.uri) return;
       const loc = await Location.getCurrentPositionAsync({});
       await checkOut.mutateAsync({
+        employeeId,
         lat: loc.coords.latitude,
         lng: loc.coords.longitude,
+        photoUri: result.assets[0].uri,
       });
       Alert.alert('Sucesso', 'Check-out registrado.');
     } catch (e: unknown) {
@@ -106,7 +141,7 @@ export function HomeScreen() {
   };
 
   const lastRecord = timeclockData?.[0];
-  const isCheckedIn = lastRecord?.type === 'CHECKIN';
+  const isCheckedIn = lastRecord?.type === 'CHECKIN' || lastRecord?.type === 'CHECKIN_FORA_DE_AREA';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

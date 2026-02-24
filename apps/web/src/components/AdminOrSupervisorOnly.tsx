@@ -6,7 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 export function AdminOrSupervisorOnly({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   if (!user) return null;
-  if (user.role !== 'ADMIN' && user.role !== 'SUPERVISOR') {
+
+  const hasAccess = 
+    user.role === 'ADMIN' || 
+    user.role === 'SUPER_ADMIN' || 
+    user.role === 'SUPERVISOR' || 
+    user.role === 'GESTOR';
+
+  if (!hasAccess) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 p-6">
         <ShieldX className="w-16 h-16 text-red-500" />

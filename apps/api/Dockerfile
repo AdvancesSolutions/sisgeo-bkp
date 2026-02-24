@@ -1,33 +1,14 @@
-FROM node:20-alpine AS base
+FROM node:20-slim
+RUN apt-get update && apt-get install -y --no-install-recommends dumb-init python3 make g++ && rm -rf /var/lib/apt/lists/*
+RUN ln -s /usr/bin/dumb-init /sbin/dumb-init || true
 RUN corepack enable && corepack prepare pnpm@9.14.2 --activate
 WORKDIR /app
-
-FROM base AS deps
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
-COPY packages/shared/package.json ./packages/shared/
-COPY apps/api/package.json ./apps/api/
-RUN pnpm install --frozen-lockfile
-
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
+RUN pnpm install
 RUN pnpm --filter @sigeo/shared build
 RUN pnpm --filter @sigeo/api build
-
-FROM base AS runner
-ARG BUILD_DATE=dev
+WORKDIR /app/apps/api
 ENV NODE_ENV=production
-ENV BUILD_DATE=${BUILD_DATE}
-COPY --from=builder /app/package.json /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages/shared ./packages/shared
-COPY --from=builder /app/apps/api/package.json ./apps/api/
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/src/db/migrations ./apps/api/src/db/migrations
-COPY --from=builder /app/apps/api/src/db/run-migrations.mjs ./apps/api/src/db/run-migrations.mjs
 EXPOSE 3000
-WORKDIR /app
-CMD ["sh", "-c", "node apps/api/src/db/run-migrations.mjs && exec node apps/api/dist/main.js"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["sh", "-c", "node src/db/run-migrations.mjs && exec node dist/main.js"]

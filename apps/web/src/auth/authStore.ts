@@ -13,6 +13,8 @@ export interface StoredUser {
   name: string;
   email: string;
   role: string;
+  setor_id?: string;
+  ativo?: boolean;
 }
 
 export interface TokenPair {

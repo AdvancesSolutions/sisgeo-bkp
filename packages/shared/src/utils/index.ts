@@ -1,3 +1,6 @@
+export { haversineDistance } from './haversine';
+export type { Coords } from './haversine';
+
 export function formatDate(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return date.toLocaleDateString('pt-BR', {

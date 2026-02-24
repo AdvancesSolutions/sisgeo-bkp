@@ -22,12 +22,23 @@ module.exports = {
       resizeMode: 'contain',
       backgroundColor: '#0f172a',
     },
+    plugins: [
+      [
+        'expo-speech-recognition',
+        {
+          microphonePermission: 'O SIGEO precisa do microfone para o assistente de voz.',
+          speechRecognitionPermission: 'O SIGEO precisa do reconhecimento de voz para comandos por voz.',
+        },
+      ],
+    ],
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.sigeo.mobile',
       infoPlist: {
         NSCameraUsageDescription: 'SIGEO precisa da câmera para registrar fotos de serviço.',
         NSLocationWhenInUseUsageDescription: 'SIGEO precisa da localização para registro de ponto e fotos.',
+        NSMicrophoneUsageDescription: 'O SIGEO precisa do microfone para o assistente de voz.',
+        NSSpeechRecognitionUsageDescription: 'O SIGEO precisa do reconhecimento de voz para comandos por voz.',
       },
     },
     android: {
@@ -36,7 +47,7 @@ module.exports = {
         backgroundColor: '#0f172a',
       },
       package: 'com.sigeo.mobile',
-      permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'CAMERA'],
+      permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'CAMERA', 'RECORD_AUDIO'],
     },
     web: {
       favicon: './assets/favicon.png',

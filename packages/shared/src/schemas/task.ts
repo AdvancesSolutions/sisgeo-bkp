@@ -8,11 +8,17 @@ const timeRegex = /^([01]?\d|2[0-3]):[0-5]\d$/;
 export const taskSchema = z.object({
   areaId: z.string().uuid('Área inválida'),
   employeeId: z.string().uuid().optional(),
+  ativoId: z.string().uuid().optional().nullable(),
   scheduledDate: z.coerce.date(),
   scheduledTime: z.string().regex(timeRegex, 'Horário inválido (HH:mm)').optional(),
   status: taskStatusEnum.default('PENDING'),
   title: z.string().optional(),
   description: z.string().optional(),
+  estimatedMinutes: z.number().int().min(0).optional().nullable(),
+  checkinLat: z.number().optional().nullable(),
+  checkinLng: z.number().optional().nullable(),
+  checkoutLat: z.number().optional().nullable(),
+  checkoutLng: z.number().optional().nullable(),
 });
 
 export const taskUpdateSchema = taskSchema.partial();

@@ -45,4 +45,10 @@ export class AuthController {
   async me(@CurrentUser('sub') sub: string) {
     return this.auth.getMe(sub);
   }
+
+  @Post('seed')
+  @ApiOperation({ summary: 'Seed database com usuários padrão (apenas dev)' })
+  async seed() {
+    return this.auth.seed();
+  }
 }

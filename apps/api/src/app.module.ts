@@ -18,6 +18,23 @@ import { UploadModule } from './modules/upload/upload.module';
 import { HealthModule } from './modules/health/health.module';
 import { EmployeeAccessModule } from './modules/employee-access/employee-access.module';
 import { CleaningTypesModule } from './modules/cleaning-types/cleaning-types.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { ChecklistModule } from './modules/checklist/checklist.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { IncidentsModule } from './modules/incidents/incidents.module';
+import { AiVisionModule } from './modules/ai-vision/ai-vision.module';
+import { AtivosModule } from './modules/ativos/ativos.module';
+import { VisionModule } from './modules/vision/vision.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { ProcedimentosModule } from './modules/procedimentos/procedimentos.module';
+import { VoiceModule } from './modules/voice/voice.module';
+import { PublicFeedbackModule } from './modules/public-feedback/public-feedback.module';
+import { RiscoColaboradorModule } from './modules/risco-colaborador/risco-colaborador.module';
+import { DigitalTwinModule } from './modules/digital-twin/digital-twin.module';
+import { SuprimentosModule } from './modules/suprimentos/suprimentos.module';
+import { BullModule } from '@nestjs/bullmq';
+
+const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
 
 /** API SIGEO - EmployeeAccessModule em produção */
 @Module({
@@ -26,6 +43,9 @@ import { CleaningTypesModule } from './modules/cleaning-types/cleaning-types.mod
     ScheduleModule.forRoot(),
     TypeOrmModule.forRoot(getDbConfig()),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    BullModule.forRoot({
+      connection: { url: redisUrl },
+    }),
     AuthModule,
     AuditModule,
     EmployeesModule,
@@ -38,6 +58,20 @@ import { CleaningTypesModule } from './modules/cleaning-types/cleaning-types.mod
     UploadModule,
     HealthModule,
     EmployeeAccessModule,
+    ReportsModule,
+    ChecklistModule,
+    DashboardModule,
+    IncidentsModule,
+    AiVisionModule,
+    AtivosModule,
+    VisionModule,
+    AdminModule,
+    ProcedimentosModule,
+    VoiceModule,
+    PublicFeedbackModule,
+    RiscoColaboradorModule,
+    DigitalTwinModule,
+    SuprimentosModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

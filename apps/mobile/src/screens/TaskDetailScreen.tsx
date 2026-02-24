@@ -110,20 +110,42 @@ export function TaskDetailScreen({
         </View>
       )}
       <Text style={styles.sectionLabel}>Fotos do serviço (antes / depois)</Text>
+      {task.photos && task.photos.length > 0 && (
+        <View style={styles.photosContainer}>
+          {task.photos
+            .filter((p) => p.type === 'BEFORE')
+            .map((p) => (
+              <View key={p.id} style={styles.photoPreview}>
+                <Text style={styles.photoLabel}>Antes</Text>
+                <Text style={styles.photoTimestamp}>{new Date(p.createdAt).toLocaleString('pt-BR')}</Text>
+              </View>
+            ))}
+          {task.photos
+            .filter((p) => p.type === 'AFTER')
+            .map((p) => (
+              <View key={p.id} style={styles.photoPreview}>
+                <Text style={styles.photoLabel}>Depois</Text>
+                <Text style={styles.photoTimestamp}>{new Date(p.createdAt).toLocaleString('pt-BR')}</Text>
+              </View>
+            ))}
+        </View>
+      )}
       <View style={styles.photoButtons}>
         <TouchableOpacity
-          style={[styles.btn, styles.btnPhotoBefore]}
+          style={[styles.btn, styles.btnPhotoBefore, task.photos?.some((p) => p.type === 'BEFORE') && styles.btnDisabled]}
           onPress={() => navigation.navigate('TakeTaskPhoto', { taskId, type: 'BEFORE' })}
+          disabled={task.photos?.some((p) => p.type === 'BEFORE')}
         >
           <Camera size={20} color="#fff" />
-          <Text style={styles.btnText}>Foto antes</Text>
+          <Text style={styles.btnText}>{task.photos?.some((p) => p.type === 'BEFORE') ? 'Foto antes ✓' : 'Foto antes'}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.btn, styles.btnPhotoAfter]}
+          style={[styles.btn, styles.btnPhotoAfter, task.photos?.some((p) => p.type === 'AFTER') && styles.btnDisabled]}
           onPress={() => navigation.navigate('TakeTaskPhoto', { taskId, type: 'AFTER' })}
+          disabled={task.photos?.some((p) => p.type === 'AFTER')}
         >
           <Camera size={20} color="#fff" />
-          <Text style={styles.btnText}>Foto depois</Text>
+          <Text style={styles.btnText}>{task.photos?.some((p) => p.type === 'AFTER') ? 'Foto depois ✓' : 'Foto depois'}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.actions}>
@@ -190,4 +212,15 @@ const styles = StyleSheet.create({
   },
   statusApproved: { backgroundColor: '#dcfce7' },
   statusText: { color: '#0f172a', fontWeight: '500' },
+  photosContainer: { marginBottom: 12, gap: 8 },
+  photoPreview: {
+    backgroundColor: '#1e293b',
+    borderRadius: 6,
+    padding: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#0ea5e9',
+  },
+  photoLabel: { color: '#0ea5e9', fontWeight: '600', fontSize: 12 },
+  photoTimestamp: { color: '#64748b', fontSize: 11, marginTop: 2 },
+  btnDisabled: { opacity: 0.5 },
 });

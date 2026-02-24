@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,8 +9,10 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import * as express from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -65,22 +68,29 @@ export class TasksController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles('ADMIN', 'SUPERVISOR')
-  @ApiOperation({ summary: 'Atualizar tarefa' })
+  @Roles('ADMIN', 'SUPERVISOR', 'AUXILIAR')
+  @ApiOperation({ summary: 'Atualizar tarefa (AUXILIAR: status e coordenadas de check-in/out)' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: unknown,
-    @CurrentUser('sub') userId?: string,
+    @CurrentUser() user?: { sub: string; role: string; employeeId?: string | null },
+    @Req() req?: express.Request,
   ) {
-    return this.service.update(id, body as TaskUpdateInput, userId);
+    const ctx = req ? { ip: req.ip ?? req.socket?.remoteAddress, userAgent: req.headers['user-agent'] } : undefined;
+    return this.service.update(id, body as TaskUpdateInput, user?.sub, ctx, user);
   }
 
   @Post(':id/approve')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Aprovar tarefa (DONE)' })
-  approve(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('sub') userId: string) {
-    return this.service.approve(id, userId);
+  approve(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('sub') userId: string,
+    @Req() req?: express.Request,
+  ) {
+    const ctx = req ? { ip: req.ip ?? req.socket?.remoteAddress, userAgent: req.headers['user-agent'] } : undefined;
+    return this.service.approve(id, userId, ctx);
   }
 
   @Post(':id/reject')
@@ -91,15 +101,22 @@ export class TasksController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('sub') userId: string,
     @Body() body: unknown,
+    @Req() req?: express.Request,
   ) {
-    return this.service.reject(id, userId, rejectTaskSchema.parse(body) as RejectTaskInput);
+    const ctx = req ? { ip: req.ip ?? req.socket?.remoteAddress, userAgent: req.headers['user-agent'] } : undefined;
+    return this.service.reject(id, userId, rejectTaskSchema.parse(body) as RejectTaskInput, ctx);
   }
 
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Remover tarefa' })
-  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('sub') userId?: string) {
-    await this.service.remove(id, userId);
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('sub') userId?: string,
+    @Req() req?: express.Request,
+  ) {
+    const ctx = req ? { ip: req.ip ?? req.socket?.remoteAddress, userAgent: req.headers['user-agent'] } : undefined;
+    await this.service.remove(id, userId, ctx);
   }
 }

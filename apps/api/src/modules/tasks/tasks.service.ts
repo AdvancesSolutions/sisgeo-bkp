@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
@@ -6,9 +6,16 @@ import { Task } from '../../entities/task.entity';
 import { TaskPhoto } from '../../entities/task-photo.entity';
 import { Area } from '../../entities/area.entity';
 import { Employee } from '../../entities/employee.entity';
+import { Ativo } from '../../entities/ativo.entity';
 import { taskSchema, taskUpdateSchema, rejectTaskSchema } from '@sigeo/shared';
 import type { TaskInput, TaskUpdateInput, RejectTaskInput } from '@sigeo/shared';
-import { AuditService } from '../audit/audit.service';
+import { AuditService, type RequestContext } from '../audit/audit.service';
+import { AtivosService } from '../ativos/ativos.service';
+import { ProcedimentosService } from '../procedimentos/procedimentos.service';
+import { DigitalTwinGateway } from '../digital-twin/digital-twin.gateway';
+import { SuprimentosService } from '../suprimentos/suprimentos.service';
+
+type UpdateUser = { sub: string; role: string; employeeId?: string | null } | undefined;
 
 /** Mínimo de fotos por tipo para enviar tarefa para validação (IN_REVIEW). Regra T5/F4. */
 const MIN_PHOTOS_BEFORE = 1;
@@ -25,13 +32,22 @@ export class TasksService {
     private readonly areaRepo: Repository<Area>,
     @InjectRepository(Employee)
     private readonly employeeRepo: Repository<Employee>,
+    @InjectRepository(Ativo)
+    private readonly ativoRepo: Repository<Ativo>,
     private readonly audit: AuditService,
+    private readonly ativosService: AtivosService,
+    private readonly procedimentos: ProcedimentosService,
+    @Optional() private readonly digitalTwinGateway?: DigitalTwinGateway,
+    @Optional() private readonly suprimentos?: SuprimentosService,
   ) {}
 
   async create(dto: TaskInput): Promise<Task> {
     const data = taskSchema.parse(dto);
     await this.validateAreaExists(data.areaId);
-    if (data.employeeId) await this.validateEmployeeActive(data.employeeId);
+    if (data.employeeId) {
+      await this.validateEmployeeActive(data.employeeId);
+      await this.validateNoScheduleOverlap(data.employeeId, data.scheduledDate, data.scheduledTime, data.estimatedMinutes, null);
+    }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (data.scheduledDate < today) {
@@ -44,6 +60,49 @@ export class TasksService {
   private async validateAreaExists(areaId: string): Promise<void> {
     const area = await this.areaRepo.findOne({ where: { id: areaId } });
     if (!area) throw new BadRequestException('Área não encontrada');
+  }
+
+  /** Motor de Escalas: impede sobreposição de horários para o mesmo funcionário no mesmo dia. */
+  private async validateNoScheduleOverlap(
+    employeeId: string,
+    scheduledDate: Date | string,
+    scheduledTime: string | null | undefined,
+    estimatedMinutes: number | null | undefined,
+    excludeTaskId: string | null,
+  ): Promise<void> {
+    const date = typeof scheduledDate === 'string' ? new Date(scheduledDate) : scheduledDate;
+    const dateStr = date.toISOString().slice(0, 10);
+
+    const existing = await this.repo.find({
+      where: { employeeId, scheduledDate: date },
+    });
+
+    const exclude = new Set(excludeTaskId ? [excludeTaskId] : []);
+    const others = existing.filter((t) => !exclude.has(t.id));
+    if (others.length === 0) return;
+
+    const parseTime = (t: string | null | undefined): number => {
+      if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return 0;
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
+    const getDuration = (task: Task, defaultMin: number) => task.estimatedMinutes ?? defaultMin;
+    const MIN_PER_DAY = 24 * 60;
+
+    const newStart = parseTime(scheduledTime);
+    const newDuration = estimatedMinutes ?? (scheduledTime ? 60 : MIN_PER_DAY);
+    const newEnd = newStart + newDuration;
+
+    for (const other of others) {
+      const oStart = parseTime(other.scheduledTime);
+      const oDuration = getDuration(other, other.scheduledTime ? 60 : MIN_PER_DAY);
+      const oEnd = oStart + oDuration;
+      if (newStart < oEnd && newEnd > oStart) {
+        throw new BadRequestException(
+          `Horário sobrepõe outra tarefa do funcionário no mesmo dia (${dateStr}). Ajuste o horário ou a tarefa existente.`,
+        );
+      }
+    }
   }
 
   /** Regra T7: funcionário atribuído à tarefa deve existir e estar ACTIVE. */
@@ -75,8 +134,12 @@ export class TasksService {
     return e;
   }
 
-  async findOneWithPhotos(id: string): Promise<Task & { photos?: TaskPhoto[] }> {
-    const task = await this.findOne(id);
+  async findOneWithPhotos(id: string): Promise<Task & { photos?: TaskPhoto[]; area?: Area }> {
+    const task = await this.repo.findOne({
+      where: { id },
+      relations: ['area', 'area.location', 'employee'],
+    });
+    if (!task) throw new NotFoundException('Tarefa não encontrada');
     const photos = await this.photoRepo.find({ where: { taskId: id }, order: { type: 'ASC', createdAt: 'DESC' } });
     return { ...task, photos };
   }
@@ -89,6 +152,13 @@ export class TasksService {
     const task = await this.findOne(taskId);
     if (task.status !== 'PENDING' && task.status !== 'IN_PROGRESS') {
       throw new BadRequestException('Só é possível adicionar foto em tarefa com status PENDING ou IN_PROGRESS');
+    }
+    // Verificar se já existe uma foto do tipo especificado
+    const existingPhoto = await this.photoRepo.findOne({
+      where: { taskId, type },
+    });
+    if (existingPhoto) {
+      throw new BadRequestException(`Já existe uma foto de tipo ${type} para esta tarefa. Máximo 1 de cada tipo.`);
     }
     const e = this.photoRepo.create({ id: uuid(), taskId, type, url, key });
     return this.photoRepo.save(e);
@@ -110,18 +180,21 @@ export class TasksService {
     return tasks.map((t) => ({ ...t, photos: byTask[t.id] ?? [] }));
   }
 
-  async approve(id: string, userId: string): Promise<Task> {
+  async approve(id: string, userId: string, ctx?: RequestContext): Promise<Task> {
     const task = await this.findOne(id);
     if (task.status !== 'IN_REVIEW') {
       throw new BadRequestException('Apenas tarefas em validação podem ser aprovadas');
     }
     const previousStatus = task.status;
-    await this.repo.update(id, { status: 'DONE' });
-    await this.audit.log(userId, 'APPROVE', 'Task', id, { previousStatus, newStatus: 'DONE' });
-    return this.findOne(id);
+    const completedAt = task.completedAt ?? new Date();
+    await this.repo.update(id, { status: 'DONE', completedAt });
+    const updated = await this.findOne(id);
+    await this.somaHorasUsoAtivo(updated);
+    await this.audit.trailStatusChange(userId, 'Task', id, 'APPROVE', previousStatus, 'DONE', ctx);
+    return updated;
   }
 
-  async reject(id: string, userId: string, dto: RejectTaskInput): Promise<Task> {
+  async reject(id: string, userId: string, dto: RejectTaskInput, ctx?: RequestContext): Promise<Task> {
     const task = await this.findOne(id);
     if (task.status !== 'IN_REVIEW') {
       throw new BadRequestException('Apenas tarefas em validação podem ser recusadas');
@@ -134,20 +207,61 @@ export class TasksService {
       rejectedAt: new Date(),
       rejectedBy: userId,
     });
-    await this.audit.log(userId, 'REJECT', 'Task', id, {
-      previousStatus,
-      newStatus: 'IN_PROGRESS',
+    await this.audit.trailStatusChange(userId, 'Task', id, 'REJECT', previousStatus, 'IN_PROGRESS', ctx, {
       comment,
       reason: reason ?? null,
     });
+
+    const reexec = this.repo.create({
+      id: uuid(),
+      areaId: task.areaId,
+      employeeId: task.employeeId,
+      scheduledDate: new Date(),
+      scheduledTime: task.scheduledTime,
+      status: 'PENDING',
+      title: `Reexecução: ${task.title ?? 'Tarefa'} (motivo: ${comment.slice(0, 50)}...)`,
+      description: `Tarefa de reexecução. Motivo da não conformidade: ${comment}`,
+      estimatedMinutes: task.estimatedMinutes,
+    });
+    await this.repo.save(reexec);
+
     return this.findOne(id);
   }
 
-  async update(id: string, dto: TaskUpdateInput, userId?: string): Promise<Task> {
+  async update(
+    id: string,
+    dto: TaskUpdateInput,
+    userId?: string,
+    ctx?: RequestContext,
+    user?: UpdateUser,
+  ): Promise<Task> {
     const data = taskUpdateSchema.parse(dto);
     const task = await this.findOne(id);
+
+    if (user?.role === 'AUXILIAR') {
+      if (task.employeeId !== user.employeeId) {
+        throw new BadRequestException('Você só pode atualizar tarefas atribuídas a você.');
+      }
+      const allowed = ['status', 'checkinLat', 'checkinLng', 'checkoutLat', 'checkoutLng', 'ativoId'];
+      const keys = Object.keys(data) as (keyof TaskUpdateInput)[];
+      for (const k of keys) {
+        if (!allowed.includes(k)) {
+          throw new BadRequestException(`Campo ${String(k)} não permitido para seu perfil.`);
+        }
+      }
+    }
     if (data.areaId !== undefined) await this.validateAreaExists(data.areaId);
-    if (data.employeeId) await this.validateEmployeeActive(data.employeeId);
+    const empId = data.employeeId ?? task.employeeId;
+    if (empId) {
+      await this.validateEmployeeActive(empId);
+      await this.validateNoScheduleOverlap(
+        empId,
+        data.scheduledDate ?? task.scheduledDate,
+        data.scheduledTime ?? task.scheduledTime,
+        data.estimatedMinutes ?? task.estimatedMinutes,
+        id,
+      );
+    }
     if (data.status === 'IN_REVIEW') {
       if (task.status !== 'PENDING' && task.status !== 'IN_PROGRESS') {
         throw new BadRequestException('Só tarefas com status PENDING ou IN_PROGRESS podem ser enviadas para validação');
@@ -160,10 +274,111 @@ export class TasksService {
       throw new BadRequestException('Data agendada não pode ser no passado');
     }
     if (data.status !== undefined && data.status !== task.status && userId) {
-      await this.audit.log(userId, 'UPDATE', 'Task', id, { previousStatus: task.status, newStatus: data.status });
+      await this.audit.trailStatusChange(
+        userId,
+        'Task',
+        id,
+        'UPDATE',
+        task.status,
+        data.status,
+        ctx,
+      );
     }
-    await this.repo.update(id, data as Partial<Task>);
+
+    const updatePayload: Partial<Task> = { ...data };
+    const now = new Date();
+
+    if (data.status === 'IN_PROGRESS' && task.status !== 'IN_PROGRESS') {
+      const empId = task.employeeId ?? data.employeeId;
+      if (empId) {
+        const isFirst = await this.procedimentos.isFirstTimeInArea(empId, task.areaId);
+        if (isFirst) {
+          const hasWatched = await this.procedimentos.hasWatchedRequiredProcedimento(empId, task.areaId);
+          if (!hasWatched) {
+            throw new BadRequestException(
+              'Primeira vez neste setor. Assista ao vídeo de treinamento antes do check-in.',
+            );
+          }
+        }
+      }
+      updatePayload.startedAt = now;
+      if (data.checkinLat != null && data.checkinLng != null) {
+        updatePayload.checkinLat = data.checkinLat;
+        updatePayload.checkinLng = data.checkinLng;
+      }
+      if (data.ativoId != null) {
+        await this.validateAtivoOperacional(data.ativoId);
+        updatePayload.ativoId = data.ativoId;
+      }
+    }
+    if (data.status === 'IN_REVIEW' && task.status !== 'IN_REVIEW') {
+      updatePayload.completedAt = now;
+    }
+    if (data.status === 'DONE' && task.status !== 'DONE') {
+      updatePayload.completedAt = updatePayload.completedAt ?? now;
+      if (data.checkoutLat != null && data.checkoutLng != null) {
+        updatePayload.checkoutLat = data.checkoutLat;
+        updatePayload.checkoutLng = data.checkoutLng;
+      }
+      const ativoId = data.ativoId ?? task.ativoId;
+      if (ativoId) updatePayload.ativoId = ativoId;
+    }
+    if (data.ativoId !== undefined) updatePayload.ativoId = data.ativoId;
+
+    await this.repo.update(id, updatePayload);
+
+    if ((data.status === 'IN_REVIEW' || data.status === 'DONE') && task.status !== data.status) {
+      const updated = await this.findOne(id);
+      await this.somaHorasUsoAtivo(updated);
+      try {
+        const area = await this.areaRepo.findOne({ where: { id: updated.areaId } });
+        if (area && this.digitalTwinGateway) {
+          this.digitalTwinGateway.emitAreaUpdated({
+            locationId: area.locationId,
+            areaId: updated.areaId,
+            status: 'GREEN',
+          });
+        }
+        if (this.suprimentos && updated.areaId) {
+          await this.suprimentos.verificarEstoqueEgerarPedidos(updated.areaId);
+        }
+      } catch {
+        // não falhar a operação se o emit/verificação falhar
+      }
+    }
     return this.findOne(id);
+  }
+
+  private async validateAtivoOperacional(ativoId: string): Promise<void> {
+    const ativo = await this.ativoRepo.findOne({ where: { id: ativoId } });
+    if (!ativo) throw new BadRequestException('Ativo não encontrado');
+    if (ativo.status !== 'OPERACIONAL') {
+      throw new BadRequestException(
+        `Ativo "${ativo.nome}" não está operacional (status: ${ativo.status}). Não pode ser usado em tarefas.`,
+      );
+    }
+  }
+
+  /**
+   * CMMS: ao check-out (IN_REVIEW) ou aprovação (DONE), soma (completedAt - startedAt) em horas
+   * ao horas_uso_total do ativo. Evita soma duplicada com flag ativoHorasSomadas.
+   */
+  private async somaHorasUsoAtivo(task: Task): Promise<void> {
+    if (!task.ativoId || !task.startedAt || task.ativoHorasSomadas) return;
+    const completedAt = task.completedAt ?? new Date();
+    const started = new Date(task.startedAt).getTime();
+    const completed = new Date(completedAt).getTime();
+    const horasUso = (completed - started) / (1000 * 60 * 60);
+    if (horasUso <= 0) return;
+    const ativo = await this.ativoRepo.findOne({ where: { id: task.ativoId } });
+    if (!ativo) return;
+    const novoTotal = (ativo.horasUsoTotal ?? 0) + horasUso;
+    await this.ativoRepo.update(task.ativoId, { horasUsoTotal: novoTotal });
+    await this.repo.update(task.id, { ativoHorasSomadas: true });
+    const ativoAtualizado = await this.ativoRepo.findOne({ where: { id: task.ativoId } });
+    if (ativoAtualizado) {
+      await this.ativosService.verificarLimiteEAutoTask(ativoAtualizado);
+    }
   }
 
   private async validateMinPhotosForReview(taskId: string): Promise<void> {
@@ -175,6 +390,61 @@ export class TasksService {
         `Para enviar à validação é necessário pelo menos ${MIN_PHOTOS_BEFORE} foto(s) ANTES e ${MIN_PHOTOS_AFTER} foto(s) DEPOIS`,
       );
     }
+  }
+
+  /**
+   * Cria tarefas automáticas baseadas em cleaning_frequency das áreas.
+   * DAILY: 1 tarefa/dia; DAILY_2X: 2 tarefas (manhã/tarde); WEEKLY: 1 tarefa/semana (segunda).
+   */
+  async scheduleAutoTasks(): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay();
+    const areas = await this.areaRepo.find({ order: { name: 'ASC' } });
+    let created = 0;
+
+    for (const area of areas) {
+      const freq = (area.cleaningFrequency ?? '').toUpperCase();
+      if (!freq) continue;
+
+      const existing = await this.repo.count({
+        where: { areaId: area.id, scheduledDate: today },
+      });
+
+      if (freq === 'DAILY' && existing === 0) {
+        const e = this.repo.create({
+          id: uuid(),
+          areaId: area.id,
+          scheduledDate: today,
+          status: 'PENDING',
+        });
+        await this.repo.save(e);
+        created++;
+      } else if (freq === 'DAILY_2X' && existing < 2) {
+        const slots = existing === 0 ? ['08:00', '14:00'] : ['14:00'];
+        for (const time of slots) {
+          const e = this.repo.create({
+            id: uuid(),
+            areaId: area.id,
+            scheduledDate: today,
+            scheduledTime: time,
+            status: 'PENDING',
+          });
+          await this.repo.save(e);
+          created++;
+        }
+      } else if (freq === 'WEEKLY' && dayOfWeek === 1 && existing === 0) {
+        const e = this.repo.create({
+          id: uuid(),
+          areaId: area.id,
+          scheduledDate: today,
+          status: 'PENDING',
+        });
+        await this.repo.save(e);
+        created++;
+      }
+    }
+    return created;
   }
 
   /** Marca como LATE tarefas cujo scheduled_date + scheduled_time já passou e status é PENDING ou IN_PROGRESS. */
@@ -204,12 +474,12 @@ export class TasksService {
     return count;
   }
 
-  async remove(id: string, userId?: string): Promise<void> {
+  async remove(id: string, userId?: string, ctx?: RequestContext): Promise<void> {
     const task = await this.findOne(id);
     if (task.status === 'DONE') {
       throw new BadRequestException('Não é permitido excluir tarefa já concluída (DONE)');
     }
-    if (userId) await this.audit.log(userId, 'DELETE', 'Task', id, { status: task.status });
+    if (userId) await this.audit.trailStatusChange(userId, 'Task', id, 'DELETE', task.status, null, ctx);
     await this.repo.delete(id);
   }
 }

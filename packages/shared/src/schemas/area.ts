@@ -8,6 +8,7 @@ export const areaSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   riskClassification: riskClassificationEnum.optional().nullable(),
   cleaningFrequency: z.string().max(50).optional().nullable(),
+  cleaningTypeId: z.string().uuid().optional().nullable(),
 });
 
 export const areaUpdateSchema = areaSchema.partial().omit({ locationId: true });

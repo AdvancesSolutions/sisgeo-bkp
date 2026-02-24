@@ -38,6 +38,16 @@ export interface Area {
   name: string;
   riskClassification?: string | null;
   cleaningFrequency?: string | null;
+  raioPermitido?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CleaningType {
+  id: string;
+  name: string;
+  description?: string | null;
+  tempoEstimado?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -80,14 +90,6 @@ export interface Photo {
   createdAt: Date;
 }
 
-export interface CleaningType {
-  id: string;
-  name: string;
-  description?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export interface Material {
   id: string;
   name: string;
@@ -117,7 +119,7 @@ export interface StockMovement {
   createdAt: Date;
 }
 
-export type TimeClockType = 'CHECKIN' | 'CHECKOUT';
+export type TimeClockType = 'CHECKIN' | 'CHECKOUT' | 'CHECKIN_FORA_DE_AREA';
 
 export interface TimeClock {
   id: string;

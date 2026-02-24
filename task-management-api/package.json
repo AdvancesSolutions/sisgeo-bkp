@@ -1,0 +1,26 @@
+{
+  "name": "task-management-api",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão de Tarefas por Setores com Controle de Acesso por Função",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "migrate": "node src/database/migrate.js",
+    "seed": "node src/database/seed.js"
+  },
+  "keywords": ["task-management", "express", "jwt", "sqlite"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

@@ -32,21 +32,31 @@ export function useTask(id: string | null) {
   });
 }
 
+export interface UpdateTaskPayload {
+  id: string;
+  status: TaskStatus;
+  checkinLat?: number;
+  checkinLng?: number;
+  checkoutLat?: number;
+  checkoutLng?: number;
+}
+
 export function useUpdateTaskStatus() {
   const qc = useQueryClient();
   const addToQueue = useAddToOfflineQueue();
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: TaskStatus }) => {
-      const { data } = await apiClient.patch<Task>(`/tasks/${id}`, { status });
+    mutationFn: async (payload: UpdateTaskPayload) => {
+      const { id, ...body } = payload;
+      const { data } = await apiClient.patch<Task>(`/tasks/${id}`, body);
       return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['task'] });
     },
-    onError: (err, { id, status }) => {
+    onError: (err, payload) => {
       if (isNetworkError(err)) {
-        addToQueue('updateTask', { id, status });
+        addToQueue('updateTask', payload);
       }
     },
   });

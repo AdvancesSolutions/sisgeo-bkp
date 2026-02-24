@@ -122,7 +122,33 @@ pnpm run docker:down  # Para containers
 pnpm run db:seed      # Cria admin
 ```
 
-### 8. Docker completo (Postgres + API)
+### 8. Sincronização com AWS
+
+Para trabalhar com dados de produção localmente:
+
+```powershell
+cd scripts
+.\sync-environment.ps1
+```
+
+Menu interativo com opções:
+- **AWS → Local**: Baixa dados de produção para desenvolvimento
+- **Local → AWS**: Envia dados locais para produção (⚠️ cuidado!)
+- **Status**: Mostra estado dos ambientes
+
+Ou use diretamente:
+
+```powershell
+# Baixar dados de produção
+.\sync-aws-to-local.ps1
+
+# Enviar para produção (requer confirmação)
+.\sync-local-to-aws.ps1
+```
+
+**Documentação completa**: [docs/SYNC-ENVIRONMENTS.md](./docs/SYNC-ENVIRONMENTS.md)
+
+### 9. Docker completo (Postgres + API)
 
 ```bash
 pnpm run docker:up

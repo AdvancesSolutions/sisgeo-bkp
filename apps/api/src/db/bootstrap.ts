@@ -20,8 +20,20 @@ import {
   Task,
   TaskPhoto,
   Material,
+  MaterialComment,
   TimeClock,
   AuditLog,
+  AuditTrail,
+  Organization,
+  Region,
+  Incident,
+  SlaAlert,
+  ChecklistItem,
+  TaskChecklistResponse,
+  OcorrenciaEmergencial,
+  ScoreDiario,
+  TrocaTurno,
+  TrocaTurnoFoto,
 } from '../entities';
 
 const entities = [
@@ -32,8 +44,20 @@ const entities = [
   Task,
   TaskPhoto,
   Material,
+  MaterialComment,
   TimeClock,
   AuditLog,
+  AuditTrail,
+  Organization,
+  Region,
+  Incident,
+  SlaAlert,
+  ChecklistItem,
+  TaskChecklistResponse,
+  OcorrenciaEmergencial,
+  ScoreDiario,
+  TrocaTurno,
+  TrocaTurnoFoto,
 ];
 
 const host = process.env.DB_HOST ?? 'localhost';
@@ -57,7 +81,9 @@ async function bootstrap() {
   console.log('Schema synchronized.');
 
   const locationRepo = ds.getRepository(Location);
+  const areaRepo = ds.getRepository(Area);
   const locationCount = await locationRepo.count();
+  let defaultLocId: string;
   if (locationCount === 0) {
     const loc = locationRepo.create({
       id: uuid(),
@@ -65,7 +91,20 @@ async function bootstrap() {
       address: 'Endereço principal',
     });
     await locationRepo.save(loc);
+    defaultLocId = loc.id;
     console.log('Local padrão criado:', loc.id);
+  } else {
+    defaultLocId = (await locationRepo.findOne({ where: {} }))!.id;
+  }
+  const areaCount = await areaRepo.count();
+  if (areaCount === 0) {
+    const area = areaRepo.create({
+      id: uuid(),
+      locationId: defaultLocId,
+      name: 'Área padrão',
+    });
+    await areaRepo.save(area);
+    console.log('Área padrão criada:', area.id);
   }
 
   const repo = ds.getRepository(User);

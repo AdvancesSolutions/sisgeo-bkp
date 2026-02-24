@@ -8,21 +8,27 @@ Se ainda houver erro 500 após um novo deploy, confira as variáveis de ambiente
 
 ---
 
-## Erro 500 em /tasks ou outros endpoints (fallback manual)
+## Erro 500 em /tasks, área vazia ou "Erro interno" (solução rápida)
 
-Se a API retorna 500 e as migrações automáticas não rodaram (ex.: deploy antigo), execute manualmente:
+Se a tela de Tarefas mostra "Erro interno. Tente novamente." e o campo Área fica vazio, o banco precisa das migrações.
 
+**Script automático (recomendado):**
+```powershell
+cd d:\SERVIDOR\SISGEO
+.\scripts\run-migrations-prod.ps1
+```
+
+O script obtém a senha do AWS SSM, executa migrações e bootstrap (cria admin, local e área padrão se o banco estiver vazio). Requer AWS CLI configurado.
+
+**Manual (se não tiver AWS CLI):**
 ```powershell
 cd d:\SERVIDOR\SISGEO
 $env:NODE_ENV="production"
-$env:DB_HOST="SEU_RDS_ENDPOINT"
-$env:DB_PASSWORD="SUA_SENHA"
+$env:DB_HOST="sigeo-db.c7qe4cecc3pa.sa-east-1.rds.amazonaws.com"
+$env:DB_USER="postgres"
+$env:DB_PASSWORD="SUA_SENHA_DO_SSM"
 $env:DB_NAME="sigeo"
 pnpm --filter @sigeo/api run db:migrate
-```
-
-Se o banco estiver vazio, rode antes o bootstrap:
-```powershell
 pnpm --filter @sigeo/api run db:bootstrap
 ```
 

@@ -22,6 +22,8 @@ import NiCheckSquare from "@/icons/nexture/ni-check-square";
 import NiCrossSquare from "@/icons/nexture/ni-cross-square";
 import NiUser from "@/icons/nexture/ni-user";
 import NiCells from "@/icons/nexture/ni-cells";
+import NiMap from "@/icons/nexture/ni-map";
+import NiArrowInDown from "@/icons/nexture/ni-arrow-in-down";
 import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,7 +40,9 @@ interface TaskPhoto {
 interface Task {
   id: string;
   areaId: string;
+  area?: { name: string };
   employeeId: string | null;
+  employee?: { name: string };
   scheduledDate: string;
   scheduledTime?: string | null;
   status: string;
@@ -46,7 +50,24 @@ interface Task {
   description: string | null;
   rejectedComment: string | null;
   rejectedAt: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  checkinLat?: number | null;
+  checkinLng?: number | null;
+  checkoutLat?: number | null;
+  checkoutLng?: number | null;
   photos?: TaskPhoto[];
+}
+
+function TimelineItem({ label, value }: { label: string; value: string }) {
+  return (
+    <Box className="flex items-center gap-2">
+      <Box className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+      <Typography variant="body2" className="text-text-secondary">
+        {label}: <span className="text-text-primary">{value}</span>
+      </Typography>
+    </Box>
+  );
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -77,6 +98,21 @@ export function TaskDetail() {
       .catch(() => setError("Tarefa não encontrada"))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleExportPdf = async () => {
+    if (!id) return;
+    try {
+      const { data } = await api.get(`/reports/visit/${id}/pdf`, { responseType: "blob" });
+      const url = URL.createObjectURL(data as Blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `relatorio-visita-${id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // erro tratado pelo interceptor
+    }
+  };
 
   const handleApprove = async () => {
     if (!id) return;
@@ -192,15 +228,15 @@ export function TaskDetail() {
               </Typography>
             </Box>
             <Box className="flex items-center gap-2 text-text-secondary">
-              <NiUser size="small" className="text-text-disabled" />
+              <NiCells size="small" className="text-text-disabled" />
               <Typography variant="body2">
-                Funcionário: <span className="text-text-primary">{task.employeeId ?? "—"}</span>
+                Área: <span className="text-text-primary">{task.area?.name ?? task.areaId}</span>
               </Typography>
             </Box>
             <Box className="flex items-center gap-2 text-text-secondary">
-              <NiCells size="small" className="text-text-disabled" />
+              <NiUser size="small" className="text-text-disabled" />
               <Typography variant="body2">
-                Área: <span className="text-text-primary">{task.areaId}</span>
+                Funcionário: <span className="text-text-primary">{task.employee?.name ?? task.employeeId ?? "—"}</span>
               </Typography>
             </Box>
             {task.description && (
@@ -240,19 +276,23 @@ export function TaskDetail() {
                 {photosBefore.length ? (
                   <Box className="flex flex-col gap-2">
                     {photosBefore.map((p) => (
-                      <a
-                        key={p.id}
-                        href={p.url.startsWith("http") ? p.url : `${baseUrl}${p.url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block overflow-hidden rounded-lg border border-grey-100"
-                      >
-                        <img
-                          src={p.url.startsWith("http") ? p.url : `${baseUrl}${p.url}`}
-                          alt="Antes"
-                          className="h-32 w-full object-cover"
-                        />
-                      </a>
+                      <Box key={p.id}>
+                        <a
+                          href={p.url.startsWith("http") ? p.url : `${baseUrl}${p.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block overflow-hidden rounded-lg border border-grey-100"
+                        >
+                          <img
+                            src={p.url.startsWith("http") ? p.url : `${baseUrl}${p.url}`}
+                            alt="Antes"
+                            className="h-32 w-full object-cover"
+                          />
+                        </a>
+                        <Typography variant="caption" className="mt-1 block text-text-secondary">
+                          {p.createdAt ? formatDateTime(p.createdAt) : ""}
+                        </Typography>
+                      </Box>
                     ))}
                   </Box>
                 ) : (
@@ -270,19 +310,23 @@ export function TaskDetail() {
                 {photosAfter.length ? (
                   <Box className="flex flex-col gap-2">
                     {photosAfter.map((p) => (
-                      <a
-                        key={p.id}
-                        href={p.url.startsWith("http") ? p.url : `${baseUrl}${p.url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block overflow-hidden rounded-lg border border-grey-100"
-                      >
-                        <img
-                          src={p.url.startsWith("http") ? p.url : `${baseUrl}${p.url}`}
-                          alt="Depois"
-                          className="h-32 w-full object-cover"
-                        />
-                      </a>
+                      <Box key={p.id}>
+                        <a
+                          href={p.url.startsWith("http") ? p.url : `${baseUrl}${p.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block overflow-hidden rounded-lg border border-grey-100"
+                        >
+                          <img
+                            src={p.url.startsWith("http") ? p.url : `${baseUrl}${p.url}`}
+                            alt="Depois"
+                            className="h-32 w-full object-cover"
+                          />
+                        </a>
+                        <Typography variant="caption" className="mt-1 block text-text-secondary">
+                          {p.createdAt ? formatDateTime(p.createdAt) : ""}
+                        </Typography>
+                      </Box>
                     ))}
                   </Box>
                 ) : (
@@ -296,6 +340,58 @@ export function TaskDetail() {
             </Box>
           </CardContent>
         </Card>
+      </Box>
+
+      {(task.startedAt || task.checkinLat != null) && (
+        <Card elevation={0} className="mt-4 border border-grey-100 bg-background-paper shadow-darker-xs">
+          <CardContent>
+            <Typography variant="subtitle1" className="mb-3 flex items-center gap-2 font-semibold text-text-primary">
+              Linha do tempo
+            </Typography>
+            <Box className="flex flex-col gap-2">
+              <TimelineItem label="Horário programado" value={scheduledLabel} />
+              {task.startedAt && <TimelineItem label="Check-in real" value={formatDateTime(task.startedAt)} />}
+              <TimelineItem label="Preenchimento" value={task.startedAt ? "Concluído" : "—"} />
+              {task.completedAt && <TimelineItem label="Check-out" value={formatDateTime(task.completedAt)} />}
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {(task.checkinLat != null && task.checkinLng != null) && (
+        <Card elevation={0} className="mt-4 border border-grey-100 bg-background-paper shadow-darker-xs">
+          <CardContent>
+            <Typography variant="subtitle1" className="mb-2 flex items-center gap-2 font-semibold text-text-primary">
+              <NiMap size="small" />
+              Geolocalização
+            </Typography>
+            <Typography variant="body2" className="mb-2 text-text-secondary">
+              Check-in: {task.checkinLat?.toFixed(6)}, {task.checkinLng?.toFixed(6)}
+            </Typography>
+            <Button
+              component="a"
+              href={`https://www.openstreetmap.org/?mlat=${task.checkinLat}&mlon=${task.checkinLng}&zoom=17`}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="small"
+              variant="outlined"
+              startIcon={<NiMap size="small" />}
+            >
+              Ver no mapa
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <Box className="mt-4 flex flex-wrap gap-3">
+        <Button
+          variant="outlined"
+          size="medium"
+          startIcon={<NiArrowInDown size="small" />}
+          onClick={handleExportPdf}
+        >
+          Exportar PDF (Evidências)
+        </Button>
       </Box>
 
       {canValidate && (
@@ -361,7 +457,7 @@ export function TaskDetail() {
             A tarefa voltará para <strong>Em execução</strong>. O comentário é obrigatório.
           </Typography>
           <TextField
-            label="Motivo da recusa (obrigatório)"
+            label="Motivo da Não Conformidade (obrigatório)"
             value={rejectComment}
             onChange={(e) => setRejectComment(e.target.value)}
             multiline

@@ -7,3 +7,4 @@ export * from './task';
 export * from './material';
 export * from './timeclock';
 export * from './photo';
+export * from './checklist';

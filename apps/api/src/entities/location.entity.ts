@@ -26,6 +26,9 @@ export class Location {
   @Column({ type: 'float', nullable: true })
   radius: number | null;
 
+  @Column({ name: 'organization_id', type: 'uuid', nullable: true })
+  organizationId: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

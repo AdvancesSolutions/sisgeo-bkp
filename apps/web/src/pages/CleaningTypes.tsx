@@ -25,8 +25,8 @@ import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import type { CleaningType } from "@sigeo/shared";
 
-type FormState = { name: string; description: string };
-const emptyForm: FormState = { name: "", description: "" };
+type FormState = { name: string; description: string; tempoEstimado: string };
+const emptyForm: FormState = { name: "", description: "", tempoEstimado: "" };
 
 export function CleaningTypes() {
   const [showForm, setShowForm] = useState(false);
@@ -65,7 +65,11 @@ export function CleaningTypes() {
       setSaving(true);
       setError(null);
       setSuccess(null);
-      const payload = { name: form.name.trim(), description: form.description.trim() || null };
+      const payload = {
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        tempoEstimado: form.tempoEstimado ? parseInt(form.tempoEstimado, 10) : null,
+      };
       if (editingId) {
         await api.patch(`/cleaning-types/${editingId}`, payload);
         setSuccess("Tipo de limpeza atualizado.");
@@ -85,7 +89,11 @@ export function CleaningTypes() {
 
   const startEdit = (item: CleaningType) => {
     setEditingId(item.id);
-    setForm({ name: item.name, description: item.description ?? "" });
+    setForm({
+      name: item.name,
+      description: item.description ?? "",
+      tempoEstimado: item.tempoEstimado != null ? String(item.tempoEstimado) : "",
+    });
     setShowForm(true);
   };
 
@@ -182,6 +190,16 @@ export function CleaningTypes() {
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
+            <TextField
+              label="Tempo estimado (min)"
+              size="small"
+              fullWidth
+              type="number"
+              inputProps={{ min: 0 }}
+              placeholder="Ex: 30"
+              value={form.tempoEstimado}
+              onChange={(e) => setForm((f) => ({ ...f, tempoEstimado: e.target.value }))}
+            />
           </DialogContent>
           <DialogActions className="gap-2 px-6 pb-4">
             <Button variant="outlined" onClick={closeModal}>
@@ -236,6 +254,12 @@ function columns(
   return [
     { field: "name", headerName: "Nome", flex: 1, minWidth: 160 },
     { field: "description", headerName: "Descrição", flex: 1, minWidth: 200 },
+    {
+      field: "tempoEstimado",
+      headerName: "Tempo est. (min)",
+      width: 120,
+      valueGetter: (_, row) => row.tempoEstimado ?? "—",
+    },
     {
       field: "id",
       headerName: "Ações",

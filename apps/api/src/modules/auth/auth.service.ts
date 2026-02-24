@@ -16,7 +16,7 @@ export interface LoginResult {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
-  user: { id: string; name: string; email: string; role: string };
+  user: { id: string; name: string; email: string; role: string; employeeId?: string | null };
 }
 
 @Injectable()
@@ -29,6 +29,7 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string): Promise<LoginResult> {
+    console.log(`[AuthService] Login attempt for: ${email}`);
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) {
       throw new UnauthorizedException('Credenciais inválidas');
@@ -40,10 +41,10 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
-  async getMe(userId: string): Promise<{ id: string; name: string; email: string; role: string }> {
+  async getMe(userId: string): Promise<{ id: string; name: string; email: string; role: string; employeeId?: string | null }> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
-    return { id: user.id, name: user.name, email: user.email, role: user.role };
+    return { id: user.id, name: user.name, email: user.email, role: user.role, employeeId: user.employeeId };
   }
 
   async refresh(refreshToken: string): Promise<LoginResult> {
@@ -94,7 +95,70 @@ export class AuthService {
     return { message: 'Senha alterada com sucesso. Faça login com a nova senha.' };
   }
 
+  async seed(): Promise<{ message: string; count: number; users: any[] }> {
+    const seedData = [
+      {
+        id: '0cde5dbd-7e3a-47c6-a4ec-f14fceb1fa7b',
+        name: 'Admin Super',
+        email: 'admin@empresa.com',
+        role: 'SUPER_ADMIN',
+        password: 'admin123',
+      },
+      {
+        id: '6a411dd7-e16e-4a0e-844e-151e30992385',
+        name: 'João Silva',
+        email: 'joao.ti@empresa.com',
+        role: 'GESTOR',
+        password: 'gestor123',
+      },
+      {
+        id: 'b681c766-abaf-439f-8fb4-3c515decf6dd',
+        name: 'Maria Santos',
+        email: 'maria.vendas@empresa.com',
+        role: 'GESTOR',
+        password: 'gestor123',
+      },
+      {
+        id: '24aabcd2-bbe6-4501-8a61-b7113c9c83ae',
+        name: 'Carlos Funcionário',
+        email: 'carlos.funcionario@empresa.com',
+        role: 'FUNCIONARIO',
+        password: 'senha123',
+      },
+    ];
+
+    const inserted = [];
+    for (const data of seedData) {
+      const exists = await this.userRepo.findOne({ where: { email: data.email } });
+      if (!exists) {
+        const hash = await bcrypt.hash(data.password, 10);
+        const user = this.userRepo.create({
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          passwordHash: hash,
+        });
+        await this.userRepo.save(user);
+        inserted.push({ email: data.email, role: data.role });
+      } else if (exists.role !== data.role) {
+        // Atualiza o role se for diferente (migração de strings legíveis para constantes)
+        exists.role = data.role;
+        await this.userRepo.save(exists);
+        inserted.push({ email: data.email, role: data.role, updated: true });
+      }
+    }
+
+    const count = await this.userRepo.count();
+    return {
+      message: 'Database seeded successfully',
+      count,
+      users: inserted,
+    };
+  }
+
   private issueTokens(user: User): LoginResult {
+    console.log(`[AuthService] Issuing tokens for user: ${user.email}`);
     const payload = { sub: user.id, email: user.email, role: user.role };
     const accessToken = this.jwt.sign(payload);
     const refreshToken = this.jwt.sign(
@@ -106,7 +170,7 @@ export class AuthService {
       accessToken,
       refreshToken,
       expiresIn,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, employeeId: user.employeeId },
     };
   }
 }

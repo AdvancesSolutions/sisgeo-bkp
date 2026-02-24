@@ -1,12 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
-import apiClient from '../../services/apiClient';
-import {
-  getPendingActions,
-  removePendingAction,
-  type PendingAction,
-  type PendingActionType,
-} from '../../utils/offlineQueue';
+import { useCallback, useEffect } from 'react';
+import NetInfo from '@react-native-community/netinfo';
+import { getPendingActions, retrySync } from '../../services/syncService';
+import { addPendingAction, type PendingActionType } from '../../utils/offlineQueue';
 
 const QUERY_KEY = ['offlineQueue'];
 
@@ -18,46 +14,43 @@ export function useOfflinePendingCount() {
   });
 }
 
-async function runAction(action: PendingAction): Promise<boolean> {
-  try {
-    if (action.type === 'checkin') {
-      const p = action.payload as { employeeId: string; lat: number; lng: number };
-      await apiClient.post('/time-clock/checkin', p);
-    } else if (action.type === 'checkout') {
-      const p = action.payload as { employeeId: string; lat: number; lng: number };
-      await apiClient.post('/time-clock/checkout', p);
-    } else if (action.type === 'updateTask') {
-      const p = action.payload as { id: string; status: string };
-      await apiClient.patch(`/tasks/${p.id}`, { status: p.status });
-    } else {
-      return false;
-    }
-    await removePendingAction(action.id);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function useFlushOfflineQueue() {
   const queryClient = useQueryClient();
 
   const flush = useCallback(async (): Promise<{ synced: number; failed: number }> => {
-    const actions = await getPendingActions();
-    let synced = 0;
-    let failed = 0;
-    for (const action of actions) {
-      const ok = await runAction(action);
-      if (ok) synced++;
-      else failed++;
-    }
+    const result = await retrySync();
     queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     queryClient.invalidateQueries({ queryKey: ['timeclock'] });
     queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    return { synced, failed };
+    return result;
   }, [queryClient]);
 
   return flush;
+}
+
+/** Dispara retrySync automaticamente quando a rede volta. */
+export function useRetrySyncOnNetwork() {
+  const flush = useFlushOfflineQueue();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      if (state.isConnected && state.isInternetReachable !== false) {
+        getPendingActions().then((actions) => {
+          if (actions.length > 0) {
+            flush().then(({ synced }) => {
+              if (synced > 0) {
+                queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+                queryClient.invalidateQueries({ queryKey: ['timeclock'] });
+                queryClient.invalidateQueries({ queryKey: ['tasks'] });
+              }
+            });
+          }
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, [flush, queryClient]);
 }
 
 export function useAddToOfflineQueue() {
@@ -65,7 +58,6 @@ export function useAddToOfflineQueue() {
 
   const addToQueue = useCallback(
     async (type: PendingActionType, payload: unknown) => {
-      const { addPendingAction } = await import('../../utils/offlineQueue');
       await addPendingAction(type, payload);
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },

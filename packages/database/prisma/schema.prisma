@@ -1,0 +1,254 @@
+// =============================================================================
+// SIGEO - Schema Prisma (PostgreSQL)
+// Auditoria, geolocalização e suporte offline
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+enum PerfilAcesso {
+  ADMIN
+  SUPERVISOR
+  AUXILIAR
+}
+
+enum ClassificacaoRisco {
+  CRITICO
+  SEMICRITICO
+  NAO_CRITICO
+}
+
+enum StatusTarefa {
+  PENDENTE
+  EXECUCAO
+  CONCLUIDA
+  ATRASADA
+  REPROVADA
+}
+
+enum EtapaEvidencia {
+  CHECKIN
+  CHECKOUT
+}
+
+// -----------------------------------------------------------------------------
+// USUÁRIOS
+// -----------------------------------------------------------------------------
+
+model User {
+  id           String        @id @default(uuid())
+  nome         String        @map("nome")
+  email        String        @unique @map("email")
+  senhaHash    String        @map("senha_hash")
+  perfil       PerfilAcesso  @map("perfil")
+  ativo        Boolean       @default(true) @map("ativo")
+  colaboradorId String?      @unique @map("colaborador_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  colaborador   Colaborador?   @relation("UserColaborador", fields: [colaboradorId], references: [id], onDelete: SetNull)
+  logAuditorias LogAuditoria[]
+  naoConformidades NaoConformidade[] @relation("SupervisorNaoConformidade")
+
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// COLABORADORES
+// -----------------------------------------------------------------------------
+
+model Colaborador {
+  id        String   @id @default(uuid())
+  nome      String   @map("nome")
+  cpf       String?  @unique @map("cpf")
+  ativo     Boolean  @default(true) @map("ativo")
+  setorId   String?  @map("setor_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  setor   Setor?   @relation(fields: [setorId], references: [id], onDelete: SetNull)
+  tarefas Tarefa[]
+  user    User?    @relation("UserColaborador")
+
+  @@index([setorId])
+  @@index([ativo])
+  @@map("colaboradores")
+}
+
+// -----------------------------------------------------------------------------
+// SETORES (Geofencing)
+// -----------------------------------------------------------------------------
+
+model Setor {
+  id                 String             @id @default(uuid())
+  nome               String             @map("nome")
+  classificacaoRisco ClassificacaoRisco @map("classificacao_risco")
+  frequenciaLimpeza  String?            @map("frequencia_limpeza")
+  lat                Float?             @map("lat")
+  long               Float?             @map("long")
+  raioGeofencing     Float?             @map("raio_geofencing")
+  qrCodeId           String?            @map("qr_code_id")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  colaboradores Colaborador[]
+  tarefas       Tarefa[]
+
+  @@index([classificacaoRisco])
+  @@index([frequenciaLimpeza])
+  @@map("setores")
+}
+
+// -----------------------------------------------------------------------------
+// TAREFAS
+// -----------------------------------------------------------------------------
+
+model Tarefa {
+  id              String        @id @default(uuid())
+  setorId         String        @map("setor_id")
+  colaboradorId   String?       @map("colaborador_id")
+  dataProgramada  DateTime     @db.Date @map("data_programada")
+  status          StatusTarefa @default(PENDENTE) @map("status")
+  tempoEstimado   Int?         @map("tempo_estimado")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  setor           Setor           @relation(fields: [setorId], references: [id], onDelete: Restrict)
+  colaborador     Colaborador?    @relation(fields: [colaboradorId], references: [id], onDelete: SetNull)
+  execucoes       ExecucaoTarefa[]
+  checklistItens  ChecklistItem[]
+
+  @@index([status])
+  @@index([dataProgramada])
+  @@index([colaboradorId])
+  @@index([setorId])
+  @@index([status, dataProgramada])
+  @@index([colaboradorId, dataProgramada])
+  @@map("tarefas")
+}
+
+// -----------------------------------------------------------------------------
+// EXECUÇÃO DE TAREFA (Check-in/Check-out + Offline)
+// -----------------------------------------------------------------------------
+
+model ExecucaoTarefa {
+  id               String    @id @default(uuid())
+  tarefaId         String    @map("tarefa_id")
+  uuidLocal        String?   @unique @map("uuid_local")
+  checkinAt        DateTime? @map("checkin_at")
+  checkinLat       Float?    @map("checkin_lat")
+  checkinLong      Float?    @map("checkin_long")
+  checkoutAt       DateTime? @map("checkout_at")
+  checkoutLat      Float?    @map("checkout_lat")
+  checkoutLong     Float?    @map("checkout_long")
+  assinaturaDigital String?  @map("assinatura_digital") @db.Text
+  observacoes      String?   @map("observacoes") @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  tarefa          Tarefa          @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+  evidencias      Evidencia[]
+  naoConformidades NaoConformidade[]
+
+  @@index([tarefaId])
+  @@index([uuidLocal])
+  @@map("execucoes_tarefa")
+}
+
+// -----------------------------------------------------------------------------
+// CHECKLIST & ITENS
+// -----------------------------------------------------------------------------
+
+model ChecklistItem {
+  id         String   @id @default(uuid())
+  tarefaId   String   @map("tarefa_id")
+  itemNome   String   @map("item_nome")
+  concluido  Boolean  @default(false) @map("concluido")
+  observacao String?  @map("observacao") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tarefa Tarefa @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+
+  @@index([tarefaId])
+  @@index([concluido])
+  @@map("checklist_itens")
+}
+
+// -----------------------------------------------------------------------------
+// EVIDÊNCIAS (Fotos S3 + Offline)
+// -----------------------------------------------------------------------------
+
+model Evidencia {
+  id           String         @id @default(uuid())
+  execucaoId   String         @map("execucao_id")
+  uuidLocal    String?        @unique @map("uuid_local")
+  urlS3        String        @map("url_s3")
+  timestamp    DateTime      @default(now()) @map("timestamp")
+  etapa        EtapaEvidencia @map("etapa")
+  metadataFoto Json?         @map("metadata_foto")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  execucao ExecucaoTarefa @relation(fields: [execucaoId], references: [id], onDelete: Cascade)
+
+  @@index([execucaoId])
+  @@index([uuidLocal])
+  @@index([etapa])
+  @@map("evidencias")
+}
+
+// -----------------------------------------------------------------------------
+// LOG DE AUDITORIA
+// -----------------------------------------------------------------------------
+
+model LogAuditoria {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  acao          String   @map("acao")
+  tabelaAfetada String   @map("tabela_afetada")
+  valorAntigo   Json?    @map("valor_antigo")
+  valorNovo     Json?    @map("valor_novo")
+  dataHora      DateTime @default(now()) @map("data_hora")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([tabelaAfetada])
+  @@index([dataHora])
+  @@map("log_auditoria")
+}
+
+// -----------------------------------------------------------------------------
+// NÃO CONFORMIDADE
+// -----------------------------------------------------------------------------
+
+model NaoConformidade {
+  id             String   @id @default(uuid())
+  execucaoId     String   @map("execucao_id")
+  descricao      String   @map("descricao") @db.Text
+  supervisorId   String   @map("supervisor_id")
+  statusCorrecao String   @map("status_correcao")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  execucao   ExecucaoTarefa @relation(fields: [execucaoId], references: [id], onDelete: Cascade)
+  supervisor User           @relation("SupervisorNaoConformidade", fields: [supervisorId], references: [id], onDelete: Restrict)
+
+  @@index([execucaoId])
+  @@index([supervisorId])
+  @@index([statusCorrecao])
+  @@map("nao_conformidades")
+}

@@ -12,6 +12,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: string;
+  employeeId?: string | null;
 }
 
 export interface LoginResult {

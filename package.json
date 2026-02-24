@@ -17,7 +17,11 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
-    "db:seed": "pnpm --filter @sigeo/api db:seed"
+    "db:seed": "pnpm --filter @sigeo/api db:seed",
+    "sync:menu": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-environment.ps1",
+    "sync:from-aws": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-aws-to-local.ps1",
+    "sync:to-aws": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-local-to-aws.ps1",
+    "sync:status": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-environment.ps1 -Action status"
   },
   "engines": {
     "node": ">=18"

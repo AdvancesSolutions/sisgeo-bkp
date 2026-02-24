@@ -32,6 +32,9 @@ export class User {
   @Column({ name: 'password_reset_expires', type: 'timestamp', nullable: true })
   passwordResetExpires: Date | null;
 
+  @Column({ name: 'organization_id', type: 'uuid', nullable: true })
+  organizationId: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

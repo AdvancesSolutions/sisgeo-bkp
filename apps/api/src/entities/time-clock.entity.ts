@@ -22,6 +22,12 @@ export class TimeClock {
   @Column({ type: 'float', nullable: true })
   lng: number | null;
 
+  @Column({ name: 'photo_url', type: 'varchar', length: 1024, nullable: true })
+  photoUrl: string | null;
+
+  @Column({ name: 'photo_key', type: 'varchar', length: 512, nullable: true })
+  photoKey: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

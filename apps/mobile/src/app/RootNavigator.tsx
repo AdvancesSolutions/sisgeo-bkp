@@ -4,7 +4,9 @@ import { useAuth } from '../features/auth/AuthContext';
 import { LoginScreen } from '../screens/LoginScreen';
 import { MainTabs } from './MainTabs';
 import { TaskDetailScreen } from '../screens/TaskDetailScreen';
+import { TaskExecutionScreen } from '../screens/TaskExecutionScreen';
 import { TakeTaskPhotoScreen } from '../screens/TakeTaskPhotoScreen';
+import { ARNavigationScreen } from '../screens/ARNavigationScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -43,11 +45,21 @@ export function RootNavigator() {
             options={{ title: 'Detalhe da tarefa' }}
           />
           <Stack.Screen
+            name="TaskExecution"
+            component={TaskExecutionScreen}
+            options={{ title: 'Execução da tarefa' }}
+          />
+          <Stack.Screen
             name="TakeTaskPhoto"
             component={TakeTaskPhotoScreen}
             options={({ route }) => ({
               title: route.params.type === 'BEFORE' ? 'Foto antes' : 'Foto depois',
             })}
+          />
+          <Stack.Screen
+            name="ARNavigation"
+            component={ARNavigationScreen}
+            options={{ headerShown: false }}
           />
         </>
       )}

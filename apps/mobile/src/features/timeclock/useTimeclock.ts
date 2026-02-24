@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TimeClock } from '@sigeo/shared';
 import apiClient from '../../services/apiClient';
-import { useAddToOfflineQueue } from '../offline/useOfflineQueue';
+import { addToOfflineQueueWithPhoto } from '../../services/syncService';
 import { isNetworkError } from '../../utils/offlineQueue';
 
-interface TimeClockCheckBody {
+export interface TimeClockCheckPayload {
   employeeId: string;
-  lat?: number;
-  lng?: number;
+  lat: number;
+  lng: number;
+  photoUri: string;
 }
 
 export function useTimeClockHistory(employeeId: string | null, limit = 20) {
@@ -26,23 +27,29 @@ export function useTimeClockHistory(employeeId: string | null, limit = 20) {
 
 export function useCheckIn(employeeId: string | null) {
   const qc = useQueryClient();
-  const addToQueue = useAddToOfflineQueue();
   return useMutation({
-    mutationFn: async (coords: { lat: number; lng: number }) => {
-      const body: TimeClockCheckBody = {
-        employeeId: employeeId!,
-        lat: coords.lat,
-        lng: coords.lng,
-      };
-      const { data } = await apiClient.post<TimeClock>('/time-clock/checkin', body);
+    mutationFn: async (payload: TimeClockCheckPayload) => {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: payload.photoUri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as unknown as Blob);
+      formData.append('employeeId', payload.employeeId);
+      formData.append('lat', payload.lat.toString());
+      formData.append('lng', payload.lng.toString());
+
+      const { data } = await apiClient.post<TimeClock>('/time-clock/checkin', formData);
       return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['timeclock'] });
+      qc.invalidateQueries({ queryKey: ['offlineQueue'] });
     },
-    onError: (err, coords) => {
-      if (employeeId && isNetworkError(err)) {
-        addToQueue('checkin', { employeeId, lat: coords.lat, lng: coords.lng });
+    onError: async (err, payload) => {
+      if (isNetworkError(err)) {
+        await addToOfflineQueueWithPhoto('checkin', payload);
+        qc.invalidateQueries({ queryKey: ['offlineQueue'] });
       }
     },
   });
@@ -50,23 +57,29 @@ export function useCheckIn(employeeId: string | null) {
 
 export function useCheckOut(employeeId: string | null) {
   const qc = useQueryClient();
-  const addToQueue = useAddToOfflineQueue();
   return useMutation({
-    mutationFn: async (coords: { lat: number; lng: number }) => {
-      const body: TimeClockCheckBody = {
-        employeeId: employeeId!,
-        lat: coords.lat,
-        lng: coords.lng,
-      };
-      const { data } = await apiClient.post<TimeClock>('/time-clock/checkout', body);
+    mutationFn: async (payload: TimeClockCheckPayload) => {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: payload.photoUri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as unknown as Blob);
+      formData.append('employeeId', payload.employeeId);
+      formData.append('lat', payload.lat.toString());
+      formData.append('lng', payload.lng.toString());
+
+      const { data } = await apiClient.post<TimeClock>('/time-clock/checkout', formData);
       return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['timeclock'] });
+      qc.invalidateQueries({ queryKey: ['offlineQueue'] });
     },
-    onError: (err, coords) => {
-      if (employeeId && isNetworkError(err)) {
-        addToQueue('checkout', { employeeId, lat: coords.lat, lng: coords.lng });
+    onError: async (err, payload) => {
+      if (isNetworkError(err)) {
+        await addToOfflineQueueWithPhoto('checkout', payload);
+        qc.invalidateQueries({ queryKey: ['offlineQueue'] });
       }
     },
   });

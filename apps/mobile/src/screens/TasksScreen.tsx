@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Navigation } from 'lucide-react-native';
 import { useTasksList } from '../features/tasks/useTasks';
+import apiClient from '../services/apiClient';
 import type { Task } from '@sigeo/shared';
 import type { RootStackParamList } from '../app/types';
 
@@ -33,16 +36,92 @@ const BADGE_BG: Record<string, { backgroundColor: string }> = {
 export function TasksScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { data, isLoading, isRefetching, refetch } = useTasksList(1, 50);
+  const [locating, setLocating] = useState(false);
 
   const tasks = data?.data ?? [];
+
+  const pendingTasks = tasks.filter(
+    (t) => t.status === 'PENDING' || t.status === 'IN_PROGRESS'
+  );
+  const nextPending = pendingTasks[0];
+
+  const handleLocalizarPonto = useCallback(async () => {
+    if (!nextPending) {
+      Alert.alert('Nenhum setor pendente', 'Não há tarefas pendentes para localizar.');
+      return;
+    }
+    setLocating(true);
+    try {
+      const { data: task } = await apiClient.get<Task & { area?: { name?: string; location?: { lat?: number; lng?: number } } }>(
+        `/tasks/${nextPending.id}`
+      );
+      const loc = task?.area?.location;
+      if (loc?.lat != null && loc?.lng != null) {
+        navigation.navigate('ARNavigation', {
+          targetLat: loc.lat,
+          targetLng: loc.lng,
+          targetName: task?.area?.name ?? 'Próximo setor',
+        });
+      } else {
+        Alert.alert(
+          'Coordenadas indisponíveis',
+          'Este setor ainda não possui localização cadastrada.'
+        );
+      }
+    } catch {
+      Alert.alert('Erro', 'Não foi possível carregar o próximo setor.');
+    } finally {
+      setLocating(false);
+    }
+  }, [nextPending, navigation]);
+
+  const openARForTask = useCallback(
+    async (taskId: string) => {
+      try {
+        const { data: task } = await apiClient.get<Task & { area?: { name?: string; location?: { lat?: number; lng?: number } } }>(
+          `/tasks/${taskId}`
+        );
+        const loc = task?.area?.location;
+        if (loc?.lat != null && loc?.lng != null) {
+          navigation.navigate('ARNavigation', {
+            targetLat: loc.lat,
+            targetLng: loc.lng,
+            targetName: task?.area?.name ?? 'Setor',
+          });
+        } else {
+          Alert.alert(
+            'Coordenadas indisponíveis',
+            'Este setor ainda não possui localização cadastrada.'
+          );
+        }
+      } catch {
+        Alert.alert('Erro', 'Não foi possível carregar o setor.');
+      }
+    },
+    [navigation]
+  );
 
   const renderItem = ({ item }: { item: Task }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('TaskDetail', { taskId: item.id })}
+      onPress={() => navigation.navigate('TaskExecution', { taskId: item.id })}
       activeOpacity={0.7}
     >
-      <Text style={styles.title} numberOfLines={1}>{item.title || 'Sem título'}</Text>
+      <View style={styles.cardHeader}>
+        <Text style={styles.title} numberOfLines={1}>{item.title || 'Sem título'}</Text>
+        {(item.status === 'PENDING' || item.status === 'IN_PROGRESS') && (
+          <TouchableOpacity
+            style={styles.navIconBtn}
+            onPress={(e) => {
+              e.stopPropagation();
+              openARForTask(item.id);
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Navigation size={20} color="#0ea5e9" />
+          </TouchableOpacity>
+        )}
+      </View>
       <Text style={styles.meta}>
         {new Date(item.scheduledDate).toLocaleDateString('pt-BR')}
       </Text>
@@ -62,6 +141,22 @@ export function TasksScreen() {
 
   return (
     <View style={styles.container}>
+      {nextPending && (
+        <TouchableOpacity
+          style={styles.localizarBtn}
+          onPress={handleLocalizarPonto}
+          disabled={locating}
+        >
+          {locating ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Navigation size={20} color="#fff" />
+              <Text style={styles.localizarText}>Localizar próximo setor</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
       <FlatList
         data={tasks}
         keyExtractor={(item) => item.id}
@@ -85,6 +180,20 @@ export function TasksScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f172a' },
   list: { padding: 16, paddingBottom: 40 },
+  localizarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: 'rgba(14,165,233,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(14,165,233,0.5)',
+  },
+  localizarText: { color: '#0ea5e9', fontWeight: '600', fontSize: 15 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f172a' },
   card: {
     backgroundColor: '#1e293b',
@@ -92,7 +201,9 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  title: { color: '#f8fafc', fontSize: 16, fontWeight: '600' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  title: { color: '#f8fafc', fontSize: 16, fontWeight: '600', flex: 1 },
+  navIconBtn: { padding: 4 },
   meta: { color: '#94a3b8', fontSize: 12, marginTop: 4 },
   badge: {
     alignSelf: 'flex-start',
