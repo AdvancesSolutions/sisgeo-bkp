@@ -155,13 +155,13 @@ export function SecondaryItem({ item, indent = 0, openedAccordions, setOpenedAcc
 
   return (
     <Accordion expanded={isExpanded} onChange={(_, expanded) => handleOnChange(expanded)}>
-      <AccordionSummary>
+      <AccordionSummary className="p-0!">
         <Button
           variant="text"
           size={"large"}
           color="text-primary"
           className={cn(
-            "full-width-button group hover:bg-grey-25 px-4",
+            "full-width-button group hover:bg-grey-25 px-4 pointer-events-none",
             isActive && "text-primary! bg-grey-25!",
             (isExpanded || isActive) && "active",
             className,
