@@ -44,9 +44,10 @@ interface Setor {
 export function Usuarios() {
   const { user } = useAuth();
   
-  // Verificação de acesso - declare antes de usar
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const isGestor = user?.role === 'GESTOR';
+  // Verificação de acesso (insensível a maiúsculas/minúsculas e espaços para legados)
+  const role = user?.role?.toUpperCase().replace(/\s/g, '_') || '';
+  const isSuperAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
+  const isGestor = role === 'GESTOR' || role === 'SUPERVISOR';
   const canAccess = isSuperAdmin || isGestor;
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -247,10 +248,13 @@ export function Usuarios() {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'SUPER_ADMIN':
-        return 'Super Admin';
+      case 'ADMIN':
+        return 'Admin';
       case 'GESTOR':
+      case 'SUPERVISOR':
         return 'Gestor';
       case 'FUNCIONARIO':
+      case 'AUXILIAR':
         return 'Funcionário';
       default:
         return role;
@@ -359,7 +363,7 @@ export function Usuarios() {
                         <Chip
                           label={getRoleLabel(usr.role)}
                           size="small"
-                          color={usr.role === 'SUPER_ADMIN' ? 'error' : 'primary'}
+                          color={(usr.role === 'SUPER_ADMIN' || usr.role === 'ADMIN') ? 'error' : 'primary'}
                           variant="outlined"
                         />
                         {!usr.ativo && (

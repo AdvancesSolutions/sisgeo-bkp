@@ -13,7 +13,16 @@ export class RolesGuard implements CanActivate {
     ]);
     if (!requiredRoles?.length) return true;
     const { user } = context.switchToHttp().getRequest();
-    const hasRole = requiredRoles.some((role) => user?.role === role);
+    const userRole = (user?.role || '').toUpperCase().replace(/\s/g, '_');
+    
+    const hasRole = requiredRoles.some((role) => {
+      const normalizedRole = role.toUpperCase().replace(/\s/g, '_');
+      // ADMIN e SUPER_ADMIN são intercambiáveis para permissões de alto nível
+      if ((userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (normalizedRole === 'ADMIN' || normalizedRole === 'SUPER_ADMIN')) {
+        return true;
+      }
+      return userRole === normalizedRole;
+    });
     if (!hasRole) {
       throw new ForbiddenException('Acesso negado para este perfil.');
     }

@@ -22,23 +22,33 @@ export const isPathMatch = (pathname: string, href: string): boolean => {
 /** Filtra itens do menu por canAccess. Filho sem canAccess herda do pai. */
 export function filterMenuByRole<T extends { canAccess?: string[]; children?: T[]; href?: string }>(
   items: T[],
-  userRole: string,
+  rawUserRole: string,
   parentCanAccess?: string[],
 ): T[] {
+  const userRole = (rawUserRole || '').toUpperCase().replace(/\s/g, '_');
+
   return items
     .filter((item) => {
       const allowed = item.canAccess ?? parentCanAccess;
-      const canView = !allowed || allowed.includes(userRole);
+      // Normalizar lista de permitidos
+      const normalizedAllowed = allowed?.map(r => r.toUpperCase().replace(/\s/g, '_'));
+
+      // Se for um admin real (SUPER_ADMIN ou ADMIN), ele vê TUDO o que for de nível administrativo
+      const isPowerUser = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+      const needsPowerUser = normalizedAllowed?.includes('ADMIN') || normalizedAllowed?.includes('SUPER_ADMIN');
+
+      const canView = !normalizedAllowed || normalizedAllowed.includes(userRole) || (isPowerUser && needsPowerUser);
+
       if (!canView) return false;
       if (item.children?.length) {
-        const filtered = filterMenuByRole(item.children, userRole, item.canAccess ?? parentCanAccess);
+        const filtered = filterMenuByRole(item.children, rawUserRole, item.canAccess ?? parentCanAccess);
         if (filtered.length === 0 && !item.href) return false;
       }
       return true;
     })
     .map((item) => {
       if (!item.children?.length) return item;
-      const filtered = filterMenuByRole(item.children, userRole, item.canAccess ?? parentCanAccess);
+      const filtered = filterMenuByRole(item.children, rawUserRole, item.canAccess ?? parentCanAccess);
       return { ...item, children: filtered };
     });
 }

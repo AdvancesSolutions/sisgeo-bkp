@@ -32,6 +32,7 @@ import { PublicFeedbackModule } from './modules/public-feedback/public-feedback.
 import { RiscoColaboradorModule } from './modules/risco-colaborador/risco-colaborador.module';
 import { DigitalTwinModule } from './modules/digital-twin/digital-twin.module';
 import { SuprimentosModule } from './modules/suprimentos/suprimentos.module';
+import { UsersModule } from './modules/users/users.module';
 import { BullModule } from '@nestjs/bullmq';
 
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
@@ -72,6 +73,7 @@ const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
     RiscoColaboradorModule,
     DigitalTwinModule,
     SuprimentosModule,
+    UsersModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

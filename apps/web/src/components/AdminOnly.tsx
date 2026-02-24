@@ -7,7 +7,8 @@ export function AdminOnly({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   if (!user) return null;
   
-  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+  const role = (user.role || '').toUpperCase().replace(/\s/g, '_');
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
 
   if (!isAdmin) {
     return (

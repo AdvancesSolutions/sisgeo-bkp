@@ -9,7 +9,7 @@ import type { AreaInput, AreaUpdateInput } from '@sigeo/shared';
 @ApiTags('areas')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('areas')
+@Controller(['areas', 'setores'])
 export class AreasController {
   constructor(private readonly service: AreasService) {}
 

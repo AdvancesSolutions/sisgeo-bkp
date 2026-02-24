@@ -49,6 +49,22 @@ export default function DashboardActions() {
         </Grid>
 
         <Grid size={{ lg: 12, md: 6, xs: 12 }}>
+          <Card component={Link} to="/usuarios" className="flex flex-row p-1 transition-transform hover:scale-[1.02]">
+            <Box className="bg-info-light/10 flex w-16 flex-none items-center justify-center rounded-2xl">
+              <Typography variant="h4">👥</Typography>
+            </Box>
+            <CardContent>
+              <Typography variant="subtitle2" className="leading-5 transition-colors">
+                Usuários do Sistema
+              </Typography>
+              <Typography variant="body1" className="text-text-secondary line-clamp-1 leading-5">
+                Gerenciar acessos e permissões
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ lg: 12, md: 6, xs: 12 }}>
           <Card component={Link} to="/validation" className="flex flex-row p-1 transition-transform hover:scale-[1.02]">
             <Box className="bg-accent-1-light/10 flex w-16 flex-none items-center justify-center rounded-2xl">
               <NiPercent className="text-accent-1" size={"large"} />

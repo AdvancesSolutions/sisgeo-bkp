@@ -28,17 +28,10 @@ interface Setor {
 
 export function Setores() {
   const { user } = useAuth();
-  const [setores, setSetores] = useState<Setor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    nome: '',
-  });
+  const role = user?.role?.toUpperCase().replace(/\s/g, '_') || '';
+  const isSuperAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
 
-  // Verificação de acesso - Apenas SUPER_ADMIN
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const [setores, setSetores] = useState<Setor[]>([]);
 
   if (!user) {
     return (

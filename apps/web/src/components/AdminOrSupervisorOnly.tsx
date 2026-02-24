@@ -7,11 +7,12 @@ export function AdminOrSupervisorOnly({ children }: { children: React.ReactNode 
   const { user } = useAuth();
   if (!user) return null;
 
+  const role = (user.role || '').toUpperCase().replace(/\s/g, '_');
   const hasAccess = 
-    user.role === 'ADMIN' || 
-    user.role === 'SUPER_ADMIN' || 
-    user.role === 'SUPERVISOR' || 
-    user.role === 'GESTOR';
+    role === 'ADMIN' || 
+    role === 'SUPER_ADMIN' || 
+    role === 'SUPERVISOR' || 
+    role === 'GESTOR';
 
   if (!hasAccess) {
     return (
