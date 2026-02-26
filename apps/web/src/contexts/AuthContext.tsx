@@ -25,9 +25,12 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() =>
-    authStore.isAuthenticated() ? authStore.getUser() : null,
-  );
+  const [user, setUser] = useState<User | null>(() => {
+    if (!authStore.isAuthenticated()) return null;
+    const u = authStore.getUser();
+    if (!u || typeof u.role !== 'string' || u.role.trim() === '') return null;
+    return u;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(() => authStore.isAuthenticated());
 

@@ -7,10 +7,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const hasToken = authStore.isAuthenticated();
 
-  if (!hasToken || !user) {
+  if (!hasToken) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  if (isVerifying) {
+  if (!user || isVerifying) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100">
         <p className="text-slate-600">Verificando sessão...</p>
