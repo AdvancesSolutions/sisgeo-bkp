@@ -7,7 +7,11 @@
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
-config({ path: resolve(process.cwd(), '.env') });
+const envFile =
+  process.env.NODE_ENV === 'production'
+    ? resolve(process.cwd(), '.env.production')
+    : resolve(process.cwd(), '.env');
+config({ path: envFile });
 
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -19,6 +23,7 @@ import {
   Area,
   Task,
   TaskPhoto,
+  Ativo,
   Material,
   MaterialComment,
   TimeClock,
@@ -34,7 +39,11 @@ import {
   ScoreDiario,
   TrocaTurno,
   TrocaTurnoFoto,
+  Procedimento,
+  Fornecedor,
+  Insumo,
 } from '../entities';
+import { CleaningType } from '../entities/cleaning-type.entity';
 
 const entities = [
   User,
@@ -43,6 +52,7 @@ const entities = [
   Area,
   Task,
   TaskPhoto,
+  Ativo,
   Material,
   MaterialComment,
   TimeClock,
@@ -58,11 +68,16 @@ const entities = [
   ScoreDiario,
   TrocaTurno,
   TrocaTurnoFoto,
+  CleaningType,
+  Procedimento,
+  Fornecedor,
+  Insumo,
 ];
 
 const host = process.env.DB_HOST ?? 'localhost';
 const isRds = host !== 'localhost' && !host.startsWith('127.');
 
+// Em produção o schema vem das migrações SQL; não usar synchronize para não alterar tabelas com dados.
 const ds = new DataSource({
   type: 'postgres',
   host,
@@ -71,7 +86,7 @@ const ds = new DataSource({
   password: process.env.DB_PASSWORD ?? 'postgres',
   database: process.env.DB_NAME ?? 'sigeo',
   entities,
-  synchronize: true,
+  synchronize: process.env.NODE_ENV !== 'production',
   logging: !!process.env.DB_LOGGING,
   ...(isRds && { ssl: { rejectUnauthorized: false } }),
 });
@@ -128,7 +143,9 @@ async function bootstrap() {
   await ds.destroy();
 }
 
-bootstrap().catch((e) => {
-  console.error(e);
+bootstrap().catch((e: unknown) => {
+  const err = e instanceof Error ? e : new Error(String(e));
+  console.error('[bootstrap] Erro:', err.message);
+  if (err.stack) console.error(err.stack);
   process.exit(1);
 });

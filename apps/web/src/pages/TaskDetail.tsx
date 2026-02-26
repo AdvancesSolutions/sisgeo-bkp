@@ -92,10 +92,16 @@ export function TaskDetail() {
 
   useEffect(() => {
     if (!id) return;
+    setError(null);
+    setTask(null);
+    setLoading(true);
     api
       .get<Task>(`/tasks/${id}`)
-      .then(({ data }) => setTask(data))
-      .catch(() => setError("Tarefa não encontrada"))
+      .then(({ data }) => {
+        setTask(data);
+        setError(null);
+      })
+      .catch((e: unknown) => setError(getApiErrorMessage(e, "Tarefa não encontrada")))
       .finally(() => setLoading(false));
   }, [id]);
 

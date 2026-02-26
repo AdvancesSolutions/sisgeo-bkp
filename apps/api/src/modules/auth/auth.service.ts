@@ -132,6 +132,13 @@ export class AuthService {
         password: 'admin123',
       },
       {
+        id: 'a1b2c3d4-e5f6-4789-a012-3456789abcde',
+        name: 'Super Admin Teste',
+        email: 'super@empresa.com',
+        role: 'SUPER_ADMIN',
+        password: 'super123',
+      },
+      {
         id: '6a411dd7-e16e-4a0e-844e-151e30992385',
         name: 'João Silva',
         email: 'joao.ti@empresa.com',

@@ -1,5 +1,6 @@
-# Build spec do Amplify. Redirects/rewrites (SPA) são configurados no Console:
-# Hosting → Rewrites and redirects → Manage redirects (ver docs/AMPLIFY-SPA-REWRITE.md).
+# Build spec do AWS Amplify — deploy automático ao push no branch conectado (ex.: main).
+# Conecte o app Amplify ao repositório GitHub e escolha o branch; o build usa os comandos abaixo.
+# Redirects/rewrites (SPA): Hosting → Rewrites and redirects (ver docs/AMPLIFY-SPA-REWRITE.md).
 version: 1
 frontend:
   phases:

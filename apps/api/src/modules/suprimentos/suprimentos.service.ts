@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import { v4 as uuid } from 'uuid';
@@ -172,7 +172,7 @@ export class SuprimentosService {
       where: { id: insumoId },
       relations: ['fornecedorPreferencial'],
     });
-    if (!insumo) throw new Error('Insumo não encontrado');
+    if (!insumo) throw new NotFoundException('Insumo não encontrado');
 
     const precoBase = Number(insumo.precoMedio ?? 100);
     const fornecedores = await this.fornecedorRepo.find({ take: 5 });
@@ -236,8 +236,8 @@ export class SuprimentosService {
       where: { id: pedidoId },
       relations: ['insumo', 'fornecedor', 'area'],
     });
-    if (!pedido) throw new Error('Pedido não encontrado');
-    if (pedido.status !== 'RASCUNHO') throw new Error('Pedido já foi processado');
+    if (!pedido) throw new NotFoundException('Pedido não encontrado');
+    if (pedido.status !== 'RASCUNHO') throw new BadRequestException('Pedido já foi processado');
     pedido.status = 'APROVADO';
     await this.pedidoRepo.save(pedido);
     return pedido;
@@ -254,9 +254,9 @@ export class SuprimentosService {
       where: { id: pedidoId },
       relations: ['insumo', 'area'],
     });
-    if (!pedido) throw new Error('Pedido não encontrado');
-    if (pedido.status === 'RECEBIDO') throw new Error('Pedido já recebido');
-    if (!pedido.areaId) throw new Error('Pedido sem área definida');
+    if (!pedido) throw new NotFoundException('Pedido não encontrado');
+    if (pedido.status === 'RECEBIDO') throw new BadRequestException('Pedido já recebido');
+    if (!pedido.areaId) throw new BadRequestException('Pedido sem área definida');
 
     let estoque = await this.estoqueRepo.findOne({
       where: { insumoId: pedido.insumoId, areaId: pedido.areaId },

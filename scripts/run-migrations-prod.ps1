@@ -27,8 +27,17 @@ $env:DB_USER = "postgres"
 $env:DB_PASSWORD = $dbPassword
 $env:DB_NAME = "sigeo"
 
+# Usa pnpm se estiver no PATH; senao npx pnpm (node_modules ou corepack)
+$usePnpm = Get-Command pnpm -ErrorAction SilentlyContinue
+$migrateArgs = @("--filter", "@sigeo/api", "run", "db:migrate")
+$bootstrapArgs = @("--filter", "@sigeo/api", "run", "db:bootstrap")
+
 Write-Host "Executando migracoes..." -ForegroundColor Cyan
-pnpm --filter @sigeo/api run db:migrate
+if ($usePnpm) {
+  & pnpm @migrateArgs
+} else {
+  & npx pnpm @migrateArgs
+}
 
 if ($LASTEXITCODE -ne 0) {
   Write-Host "Erro ao executar migracoes." -ForegroundColor Red
@@ -37,7 +46,11 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Migracoes concluidas." -ForegroundColor Green
 
 Write-Host "Executando bootstrap (usuario admin, local e area padrao se vazio)..." -ForegroundColor Cyan
-pnpm --filter @sigeo/api run db:bootstrap
+if ($usePnpm) {
+  & pnpm @bootstrapArgs
+} else {
+  & npx pnpm @bootstrapArgs
+}
 
 if ($LASTEXITCODE -eq 0) {
   Write-Host "Concluido. Acesse a aplicacao e teste Tarefas/Servicos." -ForegroundColor Green
