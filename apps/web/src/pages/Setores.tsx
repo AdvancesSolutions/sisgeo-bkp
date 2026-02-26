@@ -32,6 +32,11 @@ export function Setores() {
   const isSuperAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN';
 
   const [setores, setSetores] = useState<Setor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ nome: '' });
 
   if (!user) {
     return (
@@ -52,6 +57,7 @@ export function Setores() {
 
   const load = async () => {
     try {
+      setLoading(true);
       setError(null);
       const res = await api.get<{ data: Setor[] }>('/setores');
       setSetores(res.data.data ?? []);
