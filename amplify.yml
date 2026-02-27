@@ -11,7 +11,7 @@ frontend:
         - nvm use 20
         - node -v
         - corepack enable
-        - corepack prepare pnpm@9.14.2 --activate
+        - corepack prepare
         - pnpm install --frozen-lockfile
         - pnpm --filter @sigeo/shared build
         - pnpm --filter @sigeo/web build
