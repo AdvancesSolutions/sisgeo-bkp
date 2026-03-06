@@ -1,6 +1,6 @@
 # Build spec AWS Amplify — frontend em SIGEO/ (Vite + React).
-# IMPORTANTE: No console Amplify → Build settings → "Root directory" deve estar VAZIO (raiz do repo).
-# Assim o build roda na raiz e usa a pasta SIGEO; o package-lock.json atualizado está em SIGEO/.
+# Usa npm install --legacy-peer-deps para evitar conflito com npm ci e múltiplos package.json no repo.
+# Root directory no console: VAZIO (build na raiz do repo, comandos usam cd SIGEO).
 version: 1
 frontend:
   phases:
@@ -10,8 +10,7 @@ frontend:
         - nvm install 20
         - nvm use 20
         - node -v
-        - pwd && ls -la && ls -la SIGEO/package-lock.json 2>/dev/null || true
-        - cd SIGEO && npm ci
+        - cd SIGEO && npm install --legacy-peer-deps
     build:
       commands:
         - cd SIGEO && npm run build
