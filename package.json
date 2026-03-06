@@ -1,0 +1,36 @@
+{
+  "name": "sigeo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SIGEO - Gestão Operacional",
+  "scripts": {
+    "start": "pnpm --filter @sigeo/mobile start",
+    "stop": "npx kill-port 8081 8084 3000",
+    "dev": "pnpm run --parallel dev",
+    "dev:web": "pnpm --filter @sigeo/web dev",
+    "dev:api": "pnpm --filter @sigeo/api start:dev",
+    "dev:mobile": "pnpm --filter @sigeo/mobile dev",
+    "build": "pnpm run -r build",
+    "build:web": "pnpm --filter @sigeo/web build",
+    "build:api": "pnpm --filter @sigeo/api build",
+    "lint": "pnpm run -r lint",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "db:seed": "pnpm --filter @sigeo/api db:seed",
+    "sync:menu": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-environment.ps1",
+    "sync:from-aws": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-aws-to-local.ps1",
+    "sync:to-aws": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-local-to-aws.ps1",
+    "sync:status": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-environment.ps1 -Action status"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@9.14.2",
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0"
+    }
+  }
+}

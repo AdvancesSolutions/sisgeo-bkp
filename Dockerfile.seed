@@ -1,0 +1,28 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy monorepo files
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+
+# Copy packages
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/api/package.json ./apps/api/
+
+# Install dependencies using pnpm
+RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile
+
+# Copy source
+COPY packages/shared ./packages/shared
+COPY apps/api ./apps/api
+
+# Build
+RUN pnpm --filter @sigeo/shared build
+RUN pnpm --filter @sigeo/api build
+
+# Set working directory for running commands
+WORKDIR /app/apps/api
+
+# Default command
+CMD ["npm", "run", "start:prod"]

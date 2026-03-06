@@ -1,0 +1,36 @@
+# Build spec do AWS Amplify — deploy automático ao push no branch conectado (ex.: main).
+# Conecte o app Amplify ao repositório GitHub e escolha o branch; o build usa os comandos abaixo.
+# Redirects/rewrites (SPA): Hosting → Rewrites and redirects (ver docs/AMPLIFY-SPA-REWRITE.md).
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        - nvm install 20
+        - nvm use 20
+        - node -v
+        - corepack enable
+        - corepack prepare
+        - pnpm install --frozen-lockfile
+        - pnpm --filter @sigeo/shared build
+        - pnpm --filter @sigeo/web build
+    build:
+      commands:
+        - echo "Build already done in preBuild"
+  artifacts:
+    baseDirectory: apps/web/dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - packages/shared/node_modules/**/*
+      - apps/web/node_modules/**/*
+  customHeaders:
+    - pattern: '**'
+      headers:
+        - key: 'Cache-Control'
+          value: 'no-cache, no-store, must-revalidate'
+        - key: 'X-Frame-Options'
+          value: 'SAMEORIGIN'

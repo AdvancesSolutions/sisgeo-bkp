@@ -1,0 +1,11 @@
+# Ignorar todos os arquivos SQL (backups de banco)
+*.sql
+
+# Ignorar dumps comprimidos
+*.dump
+*.backup
+*.tar
+*.gz
+
+# Manter este arquivo
+!.gitignore

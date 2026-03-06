@@ -1,0 +1,290 @@
+/* --------------------------- */
+/* Global */
+/* --------------------------- */
+
+:root {
+  --font-body: "Mulish", ui-sans-serif;
+  --font-heading: "Urbanist", ui-sans-serif;
+}
+/* 
+  Define the CSS layer order. 
+  Note: MUI overrides this when loaded with enableCssLayer: true.
+  We use MuiLayerOverride component in ThemeProvider to enforce this order.
+*/
+@layer theme, base, mui, components, utilities;
+
+@import "tailwindcss";
+
+/* --------- Theme --------- */
+@import "./theme/common.css";
+@import "./theme/blue.css";
+@import "./theme/green.css";
+@import "./theme/orange.css";
+@import "./theme/purple.css";
+
+/* --------- Surfaces --------- */
+@import "./surfaces/accordion.css";
+@import "./surfaces/card.css";
+@import "./surfaces/paper.css";
+
+/* --------- Data Display --------- */
+@import "./data-display/avatar.css";
+@import "./data-display/badge.css";
+@import "./data-display/chip.css";
+@import "./data-display/divider.css";
+@import "./data-display/list.css";
+@import "./data-display/table.css";
+@import "./data-display/tooltip.css";
+@import "./data-display/typography.css";
+
+/* --------- Navigation --------- */
+@import "./navigation/breadcrumb.css";
+@import "./navigation/menu.css";
+@import "./navigation/bottom-navigation.css";
+@import "./navigation/drawer.css";
+@import "./navigation/link.css";
+@import "./navigation/pagination.css";
+@import "./navigation/stepper.css";
+@import "./navigation/tabs.css";
+
+/* --------- Inputs --------- */
+@import "./inputs/autocomplete.css";
+@import "./inputs/button.css";
+@import "./inputs/button-group.css";
+@import "./inputs/checkbox.css";
+@import "./inputs/fab.css";
+@import "./inputs/input.css";
+@import "./inputs/radiobutton.css";
+@import "./inputs/rating.css";
+@import "./inputs/select.css";
+@import "./inputs/slider.css";
+@import "./inputs/switch.css";
+@import "./inputs/tooglebutton.css";
+
+/* --------- Layout --------- */
+@import "./layout/scrollbar.css";
+@import "./layout/image-list.css";
+
+/* --------- Feedback --------- */
+@import "./feedback/alert.css";
+@import "./feedback/dialog.css";
+@import "./feedback/progress.css";
+@import "./feedback/skeleton.css";
+@import "./feedback/snackbar.css";
+
+/* --------- Lab --------- */
+@import "./lab/timeline.css";
+
+/* --------- Date Pickers / Charts / Data Grid --------- */
+@import "./mui-x/chart.css";
+@import "./mui-x/data-grid.css";
+@import "./mui-x/date-time-picker.css";
+@import "./mui-x/tree-view.css";
+
+/* --------- Plugins --------- */
+@import "./plugins/lightbox-yarl.css";
+@import "./plugins/video-player-vidstack.css";
+@import "./plugins/text-editor-quill.css";
+@import "./plugins/file-upload-react-dropzone.css";
+@import "./plugins/ds-markdown.css";
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility bg-waves {
+  background-image: var(--bg-waves);
+}
+
+@utility dominant-baseline-hanging {
+  dominant-baseline: hanging;
+}
+@utility text-anchor-middle {
+  text-anchor: middle;
+}
+@utility stroke-opacity-100 {
+  stroke-opacity: 1;
+}
+@utility circle-radius-5 {
+  r: 5;
+}
+@utility fill-opacity-10 {
+  fill-opacity: 0.1;
+}
+@utility fill-opacity-100 {
+  fill-opacity: 1;
+}
+
+@layer utilities {
+  body {
+    @apply bg-background text-text-primary m-0 p-0 font-sans text-base;
+  }
+}
+
+* {
+  @apply box-border;
+}
+
+*:focus {
+  outline: 0;
+}
+
+.MuiPopper-root {
+  @apply z-100;
+}
+
+@theme {
+  --font-body: var(--font-body);
+  --font-heading: var(--font-heading);
+
+  /* Font sizes – escala do projeto (menor que o default do Tailwind) */
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-lg: 1rem;        /* 16px */
+  --text-xl: 1.125rem;    /* 18px */
+  --text-2xl: 1.25rem;    /* 20px */
+  --text-3xl: 1.375rem;   /* 22px */
+  --text-4xl: 1.5rem;     /* 24px */
+  --text-5xl: 1.625rem;   /* 26px */
+
+  /* Colors (Tailwind v4 uses --color-* for utilities like bg-*, border-*, text-*) */
+  --color-background: hsl(var(--background));
+  --color-background-paper: hsl(var(--background-paper));
+  --color-grey-20: hsl(var(--grey-20));
+  --color-grey-25: hsl(var(--grey-25));
+  --color-grey-50: hsl(var(--grey-50));
+  --color-grey-100: hsl(var(--grey-100));
+  --color-grey-200: hsl(var(--grey-200));
+  --color-grey-300: hsl(var(--grey-300));
+  --color-grey-400: hsl(var(--grey-400));
+  --color-grey-500: hsl(var(--grey-500));
+  --color-grey-600: hsl(var(--grey-600));
+  --color-grey-700: hsl(var(--grey-700));
+  --color-grey-800: hsl(var(--grey-800));
+  --color-grey-900: hsl(var(--grey-900));
+  --color-text-primary: hsl(var(--text-primary));
+  --color-text-secondary: hsl(var(--text-secondary));
+  --color-text-disabled: hsl(var(--text-disabled));
+  --color-text-muted: hsl(var(--text-muted));
+  --color-text-contrast: hsl(var(--text-contrast));
+  --color-error: hsl(var(--error));
+  --color-info: hsl(var(--info));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-primary: hsl(var(--primary));
+  --color-primary-light: hsl(var(--primary-light));
+  --color-primary-dark: hsl(var(--primary-dark));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-light: hsl(var(--secondary-light));
+  --color-secondary-dark: hsl(var(--secondary-dark));
+  --color-accent-1: hsl(var(--accent-1));
+  --color-accent-1-light: hsl(var(--accent-1-light));
+  --color-accent-1-dark: hsl(var(--accent-1-dark));
+  --color-accent-2: hsl(var(--accent-2));
+  --color-accent-2-light: hsl(var(--accent-2-light));
+  --color-accent-2-dark: hsl(var(--accent-2-dark));
+  --color-accent-3: hsl(var(--accent-3));
+  --color-accent-3-light: hsl(var(--accent-3-light));
+  --color-accent-3-dark: hsl(var(--accent-3-dark));
+  --color-accent-4: hsl(var(--accent-4));
+  --color-accent-4-light: hsl(var(--accent-4-light));
+  --color-accent-4-dark: hsl(var(--accent-4-dark));
+  --color-text-primary-light: hsl(var(--text-primary-light));
+  --color-text-primary-dark: hsl(var(--text-primary-dark));
+  --color-text-secondary-light: hsl(var(--text-secondary-light));
+  --color-text-secondary-dark: hsl(var(--text-secondary-dark));
+  --color-text-disabled-light: hsl(var(--text-disabled-light));
+  --color-text-disabled-dark: hsl(var(--text-disabled-dark));
+  --color-error-light: hsl(var(--error-light));
+  --color-error-dark: hsl(var(--error-dark));
+  --color-info-light: hsl(var(--info-light));
+  --color-info-dark: hsl(var(--info-dark));
+  --color-success-light: hsl(var(--success-light));
+  --color-success-dark: hsl(var(--success-dark));
+  --color-warning-light: hsl(var(--warning-light));
+  --color-warning-dark: hsl(var(--warning-dark));
+  --color-rating: hsl(var(--rating));
+  --color-rating-light: hsl(var(--rating-light));
+  --color-rating-dark: hsl(var(--rating-dark));
+  --color-line: var(--line);
+
+  --opacity-disabled: 0.5;
+
+  /* Border radius (Tailwind v4 uses --radius-* for rounded-*) */
+  --radius-2xs: var(--border-radius-2xs);
+  --radius-xs: var(--border-radius-xs);
+  --radius-sm: var(--border-radius-sm);
+  --radius-md: var(--border-radius-md);
+  --radius-lg: var(--border-radius-lg);
+  --radius-xl: var(--border-radius-xl);
+  --radius-2xl: var(--border-radius-2xl);
+  --radius-3xl: var(--border-radius-3xl);
+  --radius-4xl: var(--border-radius-4xl);
+
+  --z-index-100: 100;
+
+  --shadow-line-left: var(--shadow-line-left);
+  --shadow-line-right: var(--shadow-line-right);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+
+  --shadow-darker-2xs: var(--shadow-darker-2xs);
+  --shadow-darker-xs: var(--shadow-darker-xs);
+  --shadow-darker-sm: var(--shadow-darker-sm);
+  --shadow-darker-md: var(--shadow-darker-md);
+  --shadow-darker-lg: var(--shadow-darker-lg);
+  --shadow-darker-xl: var(--shadow-darker-xl);
+  --shadow-darker-2xl: var(--shadow-darker-2xl);
+
+  --animate-float: float 2s ease-in-out infinite;
+
+  @keyframes float {
+    0% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  --animate-wiggle: wiggle 1s ease-in-out infinite;
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(-3deg);
+    }
+    50% {
+      transform: rotate(3deg);
+    }
+  }
+}

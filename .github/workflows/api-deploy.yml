@@ -1,0 +1,42 @@
+name: API Build & Deploy (ECS sa-east-1)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'apps/api/**'
+      - 'packages/shared/**'
+      - '.github/workflows/api-deploy.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: sa-east-1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build API image
+        run: |
+          docker build -f apps/api/Dockerfile --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%MZ) -t ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest ./
+
+      - name: Push to ECR
+        run: |
+          docker push ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
+
+      - name: Deploy to ECS (force new deployment)
+        run: |
+          aws ecs update-service --cluster sigeo-cluster --service sigeo-api --force-new-deployment --region ${{ secrets.AWS_REGION || env.AWS_REGION }}

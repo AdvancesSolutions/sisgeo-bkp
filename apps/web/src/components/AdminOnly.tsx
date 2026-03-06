@@ -1,0 +1,31 @@
+import { Link } from 'react-router-dom';
+import { ShieldX } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+
+/** RBAC: só ADMIN acessa; funcionário vê UI 403 (Acesso negado). */
+export function AdminOnly({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return null;
+  
+  const role = (user.role || '').toUpperCase().replace(/\s/g, '_');
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 p-6">
+        <ShieldX className="w-16 h-16 text-red-500" />
+        <h2 className="text-xl font-semibold text-slate-800">Acesso negado (403)</h2>
+        <p className="text-slate-600 text-center max-w-md">
+          Esta área é restrita a administradores. Se você acredita que deveria ter acesso, entre em contato com o suporte.
+        </p>
+        <Link
+          to="/dashboard"
+          className="mt-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700"
+        >
+          Voltar ao painel
+        </Link>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}

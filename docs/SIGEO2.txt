@@ -1,0 +1,31 @@
+ EM MATERIAIS
+
+CHEQUE LISTE DE NIVEL DE PRODUTO DIÁRIO(não está feito)
+
+EU COMO FUNCINÁRIO QUERO FAZER COMENTÁRIO SOBRE OS ESTOQUE DE PRODUTOS.(não está feito)
+
+EM CUMPRIMENTO DE TAREFAS
+PRECISO QUE O APP INDENTIQUE POR MEIO DA FOTO A QUAL AMBIENTE SE REFERE
+
+
+EU COMO GESTOR QUERO MONTAR EQUIPE, EDITAR, ADICIONAR, EXCLUIR,MONTAR EQUIPE DE PLANTOES.(não está feito)
+
+
+EM FUNCIONÁRIOS, CRIAR SUB ITEM, CHAMADO TROCA DE PLANTÃO COM APROVAÇÃO DO GESTOR E FUNCIONÁRIOS, DENTRO DESSE CAMPO COLETAR ASSINATURA DA TROCA DE PLANTÃO. 
+
+EU COMO GESTOR QUERO ADICIONAR MULTI TAREFAS AO FUNCIONÁRIOS OU A EQUIPE(não está feito)
+
+EM TAREFA ADICIONAR HORÁRIO 
+
+NO CAMPO NOVA TAREFA ORDENAR EM ORDEM ALFABETICA(não está feito)
+
+Eu como gestor criar rotina de tarefas para equipe ou colaborador (não está feito)
+
+criar para cada area interna um as seguintes perguntas; marcar hora e data automaricamente apos a foto ambiente limpo, coletar as seguintes perguntas do colaborador;Qual tipo de limpeza? terminal ou concorente? tem alguma havaria no setor, se sim qual?(não está feito)
+
+Indetificar em dasboard qual area não realizada nenhuma atividade. (não está feito)
+Indetificar em dasboard qual ATIVIDADE O PRESTADOR ESTÁ REALIZANDO EM TEMPO REAL
+
+
+
+

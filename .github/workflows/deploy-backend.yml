@@ -1,0 +1,152 @@
+# Deploy do Backend (API) para AWS: migrações → build Docker → ECR → ECS
+# Dispara em todo push na main. Frontend é deployado pelo Amplify (amplify.yml).
+name: Deploy Backend (Migrations + ECS)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'sa-east-1' }}
+
+jobs:
+  migrate:
+    name: Migrações RDS
+    runs-on: ubuntu-latest
+    outputs:
+      done: ${{ steps.migrate.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get DB password from SSM
+        id: db
+        run: |
+          PASSWORD=$(aws ssm get-parameter \
+            --name "${{ secrets.SSM_DB_PASSWORD_PARAM }}" \
+            --with-decryption \
+            --query "Parameter.Value" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          echo "DB_PASSWORD=$PASSWORD" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @sigeo/shared build
+
+      - name: Run migrations
+        id: migrate
+        env:
+          NODE_ENV: production
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT || '5432' }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: pnpm --filter @sigeo/api run db:migrate
+
+      - name: Run bootstrap (admin/local/area padrão)
+        env:
+          NODE_ENV: production
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT || '5432' }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: pnpm --filter @sigeo/api run db:bootstrap
+        continue-on-error: true
+
+  build-and-deploy:
+    name: Build & Deploy ECS
+    runs-on: ubuntu-latest
+    needs: migrate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pre-flight Check (validar Secrets)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+          CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+          SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+          AWS_REGION: ${{ secrets.AWS_REGION || 'sa-east-1' }}
+        run: |
+          MISSING=()
+          [[ -z "$AWS_ACCESS_KEY_ID" ]] && MISSING+=("AWS_ACCESS_KEY_ID")
+          [[ -z "$AWS_SECRET_ACCESS_KEY" ]] && MISSING+=("AWS_SECRET_ACCESS_KEY")
+          [[ -z "$ECR_REPO" ]] && MISSING+=("ECR_REPO")
+          [[ -z "$CLUSTER_NAME" ]] && MISSING+=("CLUSTER_NAME")
+          [[ -z "$SERVICE_NAME" ]] && MISSING+=("SERVICE_NAME")
+          [[ -z "$AWS_REGION" ]] && MISSING+=("AWS_REGION")
+          if [[ ${#MISSING[@]} -gt 0 ]]; then
+            echo "::error::Secrets ausentes ou vazios: ${MISSING[*]}"
+            echo "Configure em GitHub → Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          echo "✓ Todos os secrets obrigatórios do job build-and-deploy estão configurados."
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build API image
+        run: |
+          docker build -f apps/api/Dockerfile \
+            --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%MZ) \
+            -t ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest ./
+
+      - name: Push to ECR
+        run: |
+          docker push ${{ steps.ecr.outputs.registry }}/${{ secrets.ECR_REPO }}:latest
+
+      - name: Deploy to ECS (force new deployment)
+        env:
+          CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+          SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+        run: |
+          set -e
+          echo "Verificando se o cluster '$CLUSTER_NAME' existe..."
+          if ! aws ecs describe-clusters --clusters "$CLUSTER_NAME" --region ${{ env.AWS_REGION }} --query 'clusters[0].status' --output text 2>/dev/null | grep -q ACTIVE; then
+            echo "::error::Cluster ECS não encontrado: $CLUSTER_NAME"
+            echo "Verifique CLUSTER_NAME no GitHub Secrets e se o cluster existe na região ${{ env.AWS_REGION }}."
+            exit 1
+          fi
+          echo "Verificando se o serviço '$SERVICE_NAME' existe..."
+          if ! aws ecs describe-services --cluster "$CLUSTER_NAME" --services "$SERVICE_NAME" --region ${{ env.AWS_REGION }} --query 'services[0].status' --output text 2>/dev/null | grep -q ACTIVE; then
+            echo "::error::Serviço ECS não encontrado: $SERVICE_NAME no cluster $CLUSTER_NAME"
+            echo "Verifique SERVICE_NAME e CLUSTER_NAME no GitHub Secrets."
+            exit 1
+          fi
+          echo "Atualizando serviço ECS..."
+          if ! aws ecs update-service \
+            --cluster "$CLUSTER_NAME" \
+            --service "$SERVICE_NAME" \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}; then
+            echo "::error::Falha no aws ecs update-service (possível exit 254)"
+            echo "Causas comuns: permissões IAM (ecs:UpdateService), cluster/serviço incorretos, credenciais inválidas."
+            exit 1
+          fi
